@@ -1,0 +1,88 @@
+import { create } from 'zustand'
+import type { AudioCaptureStatus, AudioSource, TranscriptionResult } from '../../shared/types'
+
+interface AudioState {
+  status: AudioCaptureStatus
+  sources: AudioSource[]
+  selectedSourceId: string | null
+  whisperStatus: 'unloaded' | 'loading' | 'ready' | 'error'
+  whisperProgress: number
+  whisperMessage: string
+  transcriptions: TranscriptionResult[]
+  bufferDuration: number
+  whisperModel: 'tiny' | 'base' | 'small'
+  transcribing: boolean
+  lastFlushTime: number
+  systemAudioAvailable: boolean
+  stickySpeaker: string | null
+
+  setStatus: (status: AudioCaptureStatus) => void
+  setSources: (sources: AudioSource[]) => void
+  setSelectedSourceId: (id: string | null) => void
+  setWhisperStatus: (status: AudioState['whisperStatus']) => void
+  setWhisperProgress: (progress: number) => void
+  setWhisperMessage: (message: string) => void
+  addTranscription: (result: TranscriptionResult) => void
+  setBufferDuration: (duration: number) => void
+  setWhisperModel: (model: AudioState['whisperModel']) => void
+  setTranscribing: (v: boolean) => void
+  setLastFlushTime: (t: number) => void
+  setSystemAudioAvailable: (v: boolean) => void
+  clearTranscriptions: () => void
+  setStickySpeaker: (name: string | null) => void
+  assignSpeaker: (transcriptionId: string, segmentId: string, speaker: string) => void
+}
+
+export const useAudioStore = create<AudioState>((set) => ({
+  status: 'inactive',
+  sources: [],
+  selectedSourceId: null,
+  whisperStatus: 'unloaded',
+  whisperProgress: 0,
+  whisperMessage: '',
+  transcriptions: [],
+  bufferDuration: 30,
+  whisperModel: 'base',
+  transcribing: false,
+  lastFlushTime: 0,
+  systemAudioAvailable: false,
+  stickySpeaker: null,
+
+  setStatus: (status) => set({ status }),
+  setSources: (sources) => set({ sources }),
+  setSelectedSourceId: (id) => set({ selectedSourceId: id }),
+  setWhisperStatus: (status) => set({ whisperStatus: status }),
+  setWhisperProgress: (progress) => set({ whisperProgress: progress }),
+  setWhisperMessage: (message) => set({ whisperMessage: message }),
+  addTranscription: (result) =>
+    set((state) => ({ transcriptions: [...state.transcriptions, result] })),
+  setBufferDuration: (duration) => set({ bufferDuration: duration }),
+  setWhisperModel: (model) => set({ whisperModel: model }),
+  setTranscribing: (v) => set({ transcribing: v }),
+  setLastFlushTime: (t) => set({ lastFlushTime: t }),
+  setSystemAudioAvailable: (v) => set({ systemAudioAvailable: v }),
+  clearTranscriptions: () => set({ transcriptions: [] }),
+  setStickySpeaker: (name) => set({ stickySpeaker: name }),
+  assignSpeaker: (transcriptionId, segmentId, speaker) =>
+    set((state) => {
+      const sticky = state.stickySpeaker
+      return {
+        transcriptions: state.transcriptions.map((t) => {
+          if (t.id !== transcriptionId) return t
+          let found = false
+          const segments = t.segments.map((s) => {
+            if (s.id === segmentId) {
+              found = true
+              return { ...s, speaker }
+            }
+            // If sticky mode, fill subsequent null segments
+            if (found && sticky && s.speaker === null) {
+              return { ...s, speaker: sticky }
+            }
+            return s
+          })
+          return { ...t, segments }
+        }),
+      }
+    }),
+}))

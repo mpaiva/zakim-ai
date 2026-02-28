@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:www.w3.org)",
+      "Bash(echo \"PATH=$PATH\")",
+      "Bash(export:*)",
+      "Bash(curl:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
