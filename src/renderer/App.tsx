@@ -14,7 +14,6 @@ const SIDEBAR_MAX = 640
 
 export default function App() {
   const [sidebarWidth, setSidebarWidth] = useState(320)
-  const [statusExpanded, setStatusExpanded] = useState(false)
   const dragging = useRef(false)
 
   // Theme toggle — dark by default
@@ -130,58 +129,96 @@ export default function App() {
       <div
         role="status"
         aria-label="Application status"
-        className="flex items-center gap-2 px-3 py-1 text-xs bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700"
+        className="flex items-center gap-0 px-3 py-1.5 text-[11px] bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700 font-mono"
       >
-        <button
-          onClick={() => setStatusExpanded((v) => !v)}
-          aria-expanded={statusExpanded}
-          aria-label="Toggle status details"
-          className="text-slate-400 dark:text-gray-600 hover:text-slate-600 dark:hover:text-gray-400 transition-colors shrink-0 text-[10px] leading-none"
+        {/* IRC */}
+        <div
+          className="flex items-center gap-1.5 pr-3"
+          title={`IRC: ${ircStatus}`}
         >
-          {statusExpanded ? '▾' : '▸'}
-        </button>
-
-        {/* Always-visible dots */}
-        <div className="flex items-center gap-1" aria-hidden="true">
           <StatusDot color={
             ircStatus === 'connected' ? 'bg-green-500' :
             ircStatus === 'connecting' ? 'bg-yellow-500' :
-            ircStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
+            ircStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 dark:bg-gray-600'
           } />
+          <span className="text-slate-500 dark:text-gray-400">IRC</span>
+          {ircStatus !== 'disconnected' && (
+            <span className="text-slate-700 dark:text-gray-300">{ircStatus}</span>
+          )}
+        </div>
+
+        <span aria-hidden="true" className="text-slate-200 dark:text-gray-800 pr-3">|</span>
+
+        {/* Audio */}
+        <div
+          className="flex items-center gap-1.5 pr-3"
+          title={`Audio: ${audioStatus}`}
+        >
           <StatusDot color={
             audioStatus === 'capturing' ? 'bg-green-500' :
-            audioStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
+            audioStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 dark:bg-gray-600'
           } />
+          <span className="text-slate-500 dark:text-gray-400">Audio</span>
+          {audioStatus !== 'idle' && (
+            <span className="text-slate-700 dark:text-gray-300">{audioStatus}</span>
+          )}
+        </div>
+
+        <span aria-hidden="true" className="text-slate-200 dark:text-gray-800 pr-3">|</span>
+
+        {/* Whisper */}
+        <div
+          className="flex items-center gap-1.5 pr-3"
+          title={`Whisper: ${whisperStatus}`}
+        >
           <StatusDot color={
             whisperStatus === 'ready' ? 'bg-green-500' :
             whisperStatus === 'loading' ? 'bg-yellow-500' :
-            whisperStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
+            whisperStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 dark:bg-gray-600'
           } />
+          <span className="text-slate-500 dark:text-gray-400">Whisper</span>
+          {whisperStatus !== 'idle' && (
+            <span className={`${whisperStatus === 'error' ? 'text-red-500' : 'text-slate-700 dark:text-gray-300'}`}>
+              {whisperStatus}
+            </span>
+          )}
+        </div>
+
+        <span aria-hidden="true" className="text-slate-200 dark:text-gray-800 pr-3">|</span>
+
+        {/* Scribe — always show mode since it's a user-controlled setting */}
+        <div
+          className="flex items-center gap-1.5 pr-3"
+          title={`Scribe mode: ${scribeMode}`}
+        >
           <StatusDot color={scribeMode === 'auto' ? 'bg-amber-500' : 'bg-blue-500'} />
+          <span className="text-slate-500 dark:text-gray-400">Scribe</span>
+          <span className={scribeMode === 'auto' ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}>
+            {scribeMode}
+          </span>
+        </div>
+
+        <span aria-hidden="true" className="text-slate-200 dark:text-gray-800 pr-3">|</span>
+
+        {/* Claude */}
+        <div
+          className="flex items-center gap-1.5"
+          title={`Claude: ${scribeProcessing ? 'processing' : transcribing ? 'transcribing' : apiKeySet ? 'ready' : 'no key'}`}
+        >
           <StatusDot color={
             scribeProcessing ? 'bg-purple-500' :
             transcribing ? 'bg-yellow-500' :
-            apiKeySet ? 'bg-green-500' : 'bg-slate-400 dark:bg-gray-600'
+            apiKeySet ? 'bg-green-500' : 'bg-slate-300 dark:bg-gray-600'
           } />
+          <span className="text-slate-500 dark:text-gray-400">Claude</span>
+          {(scribeProcessing || transcribing || !apiKeySet) && (
+            <span className={!apiKeySet ? 'text-slate-400 dark:text-gray-500' : 'text-slate-700 dark:text-gray-300'}>
+              {scribeProcessing ? 'processing' : transcribing ? 'transcribing' : 'no key'}
+            </span>
+          )}
         </div>
 
-        {/* Expanded labels */}
-        {statusExpanded && (
-          <div className="flex items-center gap-2 text-slate-600 dark:text-gray-400 font-mono">
-            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
-            <span>IRC: {ircStatus}</span>
-            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
-            <span>Audio: {audioStatus}</span>
-            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
-            <span>Whisper: {whisperStatus}</span>
-            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
-            <span>Scribe: {scribeMode}</span>
-            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
-            <span>Claude: {scribeProcessing ? 'processing' : transcribing ? 'transcribing' : apiKeySet ? 'ready' : 'no key'}</span>
-          </div>
-        )}
-
-        <span className="ml-auto text-slate-500 dark:text-gray-400 font-mono">Zakim AI v0.1.0</span>
+        <span className="ml-auto text-slate-400 dark:text-gray-600">v0.1.0</span>
       </div>
     </div>
   )
