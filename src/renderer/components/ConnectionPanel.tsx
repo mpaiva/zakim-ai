@@ -140,7 +140,7 @@ export default function ConnectionPanel({
         title={isDark ? 'Light mode' : 'Dark mode'}
         className="ml-auto px-2 py-1 text-xs rounded font-medium bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-600 dark:text-gray-300 transition-colors shrink-0"
       >
-        {isDark ? '☀' : '☾'}
+        {isDark ? '☀ Light' : '☾ Dark'}
       </button>
     </div>
   )
