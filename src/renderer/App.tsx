@@ -91,7 +91,7 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-100 font-sans antialiased select-none">
       {/* Connection bar */}
-      <ConnectionPanel />
+      <ConnectionPanel isDark={isDark} onToggleTheme={() => setIsDark((v) => !v)} />
 
       {/* Main content: three-panel layout */}
       <div
@@ -167,17 +167,7 @@ export default function App() {
           Claude: {scribeProcessing ? 'processing' : transcribing ? 'transcribing' : apiKeySet ? 'ready' : 'no key'}
         </span>
 
-        <span className="ml-auto flex items-center gap-2">
-          <span className="text-slate-500 dark:text-gray-400">Zakim AI v0.1.0</span>
-          <button
-            onClick={() => setIsDark((v) => !v)}
-            className="px-2 py-0.5 rounded text-xs bg-slate-200 hover:bg-slate-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-600 dark:text-gray-300 transition-colors"
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={isDark ? 'Light mode' : 'Dark mode'}
-          >
-            {isDark ? '☀ Light' : '☾ Dark'}
-          </button>
-        </span>
+        <span className="ml-auto text-slate-500 dark:text-gray-400">Zakim AI v0.1.0</span>
       </div>
     </div>
   )
