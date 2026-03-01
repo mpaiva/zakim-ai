@@ -40,16 +40,6 @@ export default function ConnectionPanel({
 
   return (
     <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
-      {/* Theme toggle */}
-      <button
-        onClick={onToggleTheme}
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        title={isDark ? 'Light mode' : 'Dark mode'}
-        className="px-2 py-1 text-xs rounded font-medium bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-600 dark:text-gray-300 transition-colors shrink-0"
-      >
-        {isDark ? '☀' : '☾'}
-      </button>
-
       {/* Status dot */}
       <div
         className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusColor} transition-colors`}
@@ -141,6 +131,16 @@ export default function ConnectionPanel({
         className="px-3 py-1 text-sm rounded font-medium bg-green-700 hover:bg-green-800 text-white disabled:opacity-50 transition-colors"
       >
         Join
+      </button>
+
+      {/* Theme toggle */}
+      <button
+        onClick={onToggleTheme}
+        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={isDark ? 'Light mode' : 'Dark mode'}
+        className="ml-auto px-2 py-1 text-xs rounded font-medium bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-600 dark:text-gray-300 transition-colors shrink-0"
+      >
+        {isDark ? '☀' : '☾'}
       </button>
     </div>
   )
