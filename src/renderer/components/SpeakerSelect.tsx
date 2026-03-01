@@ -6,6 +6,8 @@ interface SpeakerSelectProps {
   onChange: (speaker: string) => void
 }
 
+const selectCls = 'w-24 px-1 py-0.5 text-xs font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-800 dark:text-gray-200 transition-colors'
+
 export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
   const users = useIrcStore((s) => s.users)
   const [customMode, setCustomMode] = useState(false)
@@ -36,8 +38,9 @@ export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
           setCustomName('')
         }}
         autoFocus
-        placeholder="Name..."
-        className="w-24 px-1 py-0.5 text-xs bg-gray-900 border border-gray-600 rounded"
+        placeholder="Name…"
+        aria-label="Custom speaker name"
+        className="w-24 px-1 py-0.5 text-xs font-mono bg-white dark:bg-gray-900 border border-amber-400 rounded text-slate-800 dark:text-gray-200"
       />
     )
   }
@@ -54,9 +57,10 @@ export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
           onChange(e.target.value)
         }
       }}
-      className="w-24 px-1 py-0.5 text-xs bg-gray-900 border border-gray-600 rounded"
+      aria-label="Select speaker"
+      className={selectCls}
     >
-      <option value="">Speaker...</option>
+      <option value="">Speaker…</option>
       {isCustomValue && (
         <option value={value}>{value}</option>
       )}
@@ -65,7 +69,7 @@ export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
           {u.nick}
         </option>
       ))}
-      <option value="__other__">Other...</option>
+      <option value="__other__">Other…</option>
     </select>
   )
 }

@@ -1,4 +1,5 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { IPC } from '../shared/types'
 import { join } from 'path'
 import { setupIrc } from './irc'
 import { setupClaude } from './claude'
@@ -28,6 +29,8 @@ function createWindow() {
     win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
+
+ipcMain.handle(IPC.SHELL_OPEN_EXTERNAL, (_event, url: string) => shell.openExternal(url))
 
 app.whenReady().then(() => {
   setupSidecar()

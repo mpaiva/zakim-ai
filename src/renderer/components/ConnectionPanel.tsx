@@ -24,16 +24,23 @@ export default function ConnectionPanel() {
   }
 
   const statusColor = {
-    disconnected: 'bg-gray-500',
+    disconnected: 'bg-slate-400 dark:bg-gray-500',
     connecting: 'bg-yellow-500',
     connected: 'bg-green-500',
     error: 'bg-red-500',
   }[status]
 
+  const inputCls = 'px-2 py-1 text-sm font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-600 disabled:opacity-50 transition-colors'
+
   return (
-    <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-800 border-b border-gray-700">
+    <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
       {/* Status dot */}
-      <div className={`w-2.5 h-2.5 rounded-full ${statusColor}`} title={status} />
+      <div
+        className={`w-2.5 h-2.5 rounded-full shrink-0 ${statusColor} transition-colors`}
+        title={`IRC: ${status}`}
+        role="status"
+        aria-label={`IRC status: ${status}`}
+      />
 
       {/* Server */}
       <input
@@ -42,7 +49,8 @@ export default function ConnectionPanel() {
         onChange={(e) => setHost(e.target.value)}
         disabled={connected || connecting}
         placeholder="Host"
-        className="w-36 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded disabled:opacity-50"
+        aria-label="IRC server hostname"
+        className={`w-36 ${inputCls}`}
       />
 
       {/* Port */}
@@ -51,11 +59,12 @@ export default function ConnectionPanel() {
         value={port}
         onChange={(e) => setPort(Number(e.target.value))}
         disabled={connected || connecting}
-        className="w-16 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded disabled:opacity-50"
+        aria-label="IRC server port"
+        className={`w-16 ${inputCls}`}
       />
 
       {/* TLS */}
-      <label className="flex items-center gap-1 text-sm text-gray-400">
+      <label className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-gray-400 cursor-pointer select-none">
         <input
           type="checkbox"
           checked={tls}
@@ -65,7 +74,8 @@ export default function ConnectionPanel() {
             if (!e.target.checked && port === 6697) setPort(6667)
           }}
           disabled={connected || connecting}
-          className="accent-blue-500"
+          className="accent-amber-500"
+          aria-label="Use TLS encryption"
         />
         TLS
       </label>
@@ -77,36 +87,42 @@ export default function ConnectionPanel() {
         onChange={(e) => setNick(e.target.value)}
         disabled={connected || connecting}
         placeholder="Nickname"
-        className="w-28 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded disabled:opacity-50"
+        aria-label="IRC nickname"
+        className={`w-28 ${inputCls}`}
       />
 
       {/* Connect button */}
       <button
         onClick={handleConnect}
         disabled={connecting}
-        className={`px-3 py-1 text-sm rounded font-medium ${
+        aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC'}
+        className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
           connected
-            ? 'bg-red-600 hover:bg-red-700'
-            : 'bg-blue-600 hover:bg-blue-700'
-        } disabled:opacity-50`}
+            ? 'bg-red-600 hover:bg-red-700 text-white'
+            : 'bg-amber-500 hover:bg-amber-600 text-white'
+        }`}
       >
-        {connecting ? 'Connecting...' : connected ? 'Disconnect' : 'Connect'}
+        {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
       </button>
 
+      {/* Divider */}
+      <div className="w-px h-5 bg-slate-200 dark:bg-gray-700 mx-0.5" />
+
       {/* Channel */}
-      <div className="w-px h-6 bg-gray-600 mx-1" />
       <input
         type="text"
         value={channel}
         onChange={(e) => setChannel(e.target.value)}
         placeholder="#channel"
-        className="w-24 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded disabled:opacity-50"
+        aria-label="IRC channel to join"
+        className={`w-24 ${inputCls}`}
         disabled={!connected}
       />
       <button
         onClick={handleJoin}
         disabled={!connected || !channel}
-        className="px-3 py-1 text-sm rounded font-medium bg-green-600 hover:bg-green-700 disabled:opacity-50"
+        aria-label="Join IRC channel"
+        className="px-3 py-1 text-sm rounded font-medium bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 transition-colors"
       >
         Join
       </button>

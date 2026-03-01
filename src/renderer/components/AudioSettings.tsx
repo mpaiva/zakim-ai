@@ -1,294 +1,19 @@
 import { useEffect, useState } from 'react'
-import { pipeline, type AutomaticSpeechRecognitionPipeline } from '@huggingface/transformers'
 import { useAudioStore } from '../stores/audioStore'
 import { useScribeStore } from '../stores/scribeStore'
-import type { AudioSource, TranscriptionSegment, WhisperWordChunk } from '../../shared/types'
+import { loadWhisperModel } from '../audioCapture'
+import type { AudioSource } from '../../shared/types'
 
-let transcriber: AutomaticSpeechRecognitionPipeline | null = null
-let mediaStream: MediaStream | null = null
-let mediaRecorder: MediaRecorder | null = null
-let flushTimer: ReturnType<typeof setInterval> | null = null
-let systemDataCleanup: (() => void) | null = null
-let recordedChunks: Blob[] = []
-
-function makeId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-}
-
-/** Decode a Blob of recorded audio into a 16 kHz mono Float32Array for Whisper */
-async function decodeAudioBlob(blob: Blob): Promise<Float32Array> {
-  const arrayBuffer = await blob.arrayBuffer()
-  const audioCtx = new OfflineAudioContext(1, 1, 16000)
-  const decoded = await audioCtx.decodeAudioData(arrayBuffer)
-
-  // Resample to 16 kHz mono via OfflineAudioContext
-  const offlineCtx = new OfflineAudioContext(1, Math.ceil(decoded.duration * 16000), 16000)
-  const source = offlineCtx.createBufferSource()
-  source.buffer = decoded
-  source.connect(offlineCtx.destination)
-  source.start()
-  const rendered = await offlineCtx.startRendering()
-  return rendered.getChannelData(0)
-}
-
-function makeSegment(words: WhisperWordChunk[]): TranscriptionSegment {
-  return {
-    id: makeId(),
-    text: words.map((w) => w.text).join('').trim(),
-    speaker: null,
-    startTime: words[0].timestamp[0],
-    endTime: words[words.length - 1].timestamp[1],
-  }
-}
-
-function splitIntoSegments(chunks: WhisperWordChunk[], stickySpeaker: string | null): TranscriptionSegment[] {
-  if (chunks.length === 0) return []
-  const segments: TranscriptionSegment[] = []
-  let currentWords = [chunks[0]]
-
-  for (let i = 1; i < chunks.length; i++) {
-    const gap = chunks[i].timestamp[0] - chunks[i - 1].timestamp[1]
-    if (gap >= 1.0) {
-      segments.push(makeSegment(currentWords))
-      currentWords = [chunks[i]]
-    } else {
-      currentWords.push(chunks[i])
-    }
-  }
-  segments.push(makeSegment(currentWords))
-
-  // Apply sticky speaker to all segments if set
-  if (stickySpeaker) {
-    for (const seg of segments) {
-      seg.speaker = stickySpeaker
-    }
-  }
-
-  return segments
-}
-
-async function transcribe(audio: Float32Array) {
-  if (!transcriber) {
-    console.warn('[AudioSettings] transcribe called but transcriber is null')
-    return
-  }
-
-  const { addTranscription, setTranscribing, bufferDuration } = useAudioStore.getState()
-  const { apiKeySet, addMessages, setProcessing } = useScribeStore.getState()
-
-  console.log(`[AudioSettings] Transcribing ${audio.length} samples (${(audio.length / 16000).toFixed(1)}s of audio)`)
-  setTranscribing(true)
-  try {
-    let result: any
-    let hasTimestamps = false
-    try {
-      result = await transcriber(audio, {
-        language: 'pt',
-        task: 'translate',
-        return_timestamps: 'word',
-      })
-      hasTimestamps = true
-    } catch {
-      try {
-        result = await transcriber(audio, {
-          language: 'pt',
-          task: 'translate',
-          return_timestamps: true,
-        })
-        hasTimestamps = true
-      } catch {
-        console.warn('[AudioSettings] Timestamps not supported by this model, transcribing without')
-        result = await transcriber(audio, {
-          language: 'pt',
-          task: 'translate',
-        })
-      }
-    }
-
-    const singleResult = Array.isArray(result) ? result[0] : result
-    const text = singleResult?.text || ''
-    console.log(`[AudioSettings] Whisper result (timestamps=${hasTimestamps}): "${text}"`)
-    if (text && text.trim()) {
-      const trimmed = text.trim()
-
-      // Build segments from word timestamps
-      const chunks: WhisperWordChunk[] = (singleResult?.chunks || []).map((c: any) => ({
-        text: c.text || '',
-        timestamp: c.timestamp as [number, number],
-      }))
-
-      const currentSticky = useAudioStore.getState().stickySpeaker
-      let segments: TranscriptionSegment[]
-      if (hasTimestamps && chunks.length > 0) {
-        segments = splitIntoSegments(chunks, currentSticky)
-      } else {
-        // No timestamps — single segment with full text
-        segments = [{
-          id: makeId(),
-          text: trimmed,
-          speaker: currentSticky,
-          startTime: 0,
-          endTime: 0,
-        }]
-      }
-
-      addTranscription({
-        id: makeId(),
-        timestamp: Date.now(),
-        text: trimmed,
-        duration: bufferDuration,
-        segments,
-      })
-
-      // If all segments have speakers (via sticky), auto-send to Claude
-      const allAssigned = segments.every((s) => s.speaker !== null)
-      if (allAssigned && apiKeySet) {
-        setTranscribing(false)
-        setProcessing(true)
-        const speakerTexts = segments.map((s) => ({
-          speaker: s.speaker!,
-          text: s.text,
-        }))
-        try {
-          const msgs = await window.api.scribe.processSpeakers(speakerTexts)
-          console.log(`[AudioSettings] processSpeakers returned ${msgs.length} scribe messages`)
-          addMessages(msgs)
-        } catch (err) {
-          console.warn('[AudioSettings] processSpeakers failed, falling back:', err)
-          try {
-            const msgs = await window.api.scribe.process(trimmed)
-            addMessages(msgs)
-          } catch (err2) {
-            console.error('[AudioSettings] Scribe processing failed:', err2)
-          }
-        } finally {
-          setProcessing(false)
-        }
-        return
-      }
-    } else {
-      console.log('[AudioSettings] Whisper returned empty/silent text, skipping')
-    }
-  } catch (err) {
-    console.error('[AudioSettings] Transcription failed:', err)
-  } finally {
-    setTranscribing(false)
-  }
-}
-
-function flushBuffer() {
-  if (!mediaRecorder || mediaRecorder.state !== 'recording') {
-    console.log('[AudioSettings] flushBuffer: recorder not active')
-    return
-  }
-
-  mediaRecorder.stop()
-
-  mediaRecorder.onstop = async () => {
-    const chunks = recordedChunks
-    recordedChunks = []
-    useAudioStore.getState().setLastFlushTime(Date.now())
-
-    if (chunks.length === 0) {
-      console.log('[AudioSettings] flushBuffer: no recorded chunks')
-    } else {
-      const blob = new Blob(chunks, { type: mediaRecorder!.mimeType })
-      console.log(`[AudioSettings] Buffer flushed: ${blob.size} bytes, transcriber=${!!transcriber}`)
-
-      if (transcriber) {
-        try {
-          const audio = await decodeAudioBlob(blob)
-          console.log(`[AudioSettings] Decoded to ${audio.length} samples (${(audio.length / 16000).toFixed(1)}s @ 16kHz)`)
-          transcribe(audio)
-        } catch (err) {
-          console.error('[AudioSettings] Audio decode failed:', err)
-        }
-      }
-    }
-
-    if (mediaStream && mediaStream.active && mediaRecorder) {
-      try {
-        mediaRecorder.start()
-        console.log('[AudioSettings] MediaRecorder restarted')
-      } catch (err) {
-        console.error('[AudioSettings] Failed to restart recorder:', err)
-      }
-    }
-  }
-}
-
-export async function startCapture() {
-  const { selectedSourceId, bufferDuration, setStatus, setLastFlushTime } = useAudioStore.getState()
-  if (!selectedSourceId) return
-
-  try {
-    if (selectedSourceId === '__system__') {
-      systemDataCleanup = window.api.audio.onSystemData((samples) => {
-        console.log(`[AudioSettings] System audio: ${samples.length} samples (${(samples.length / 16000).toFixed(1)}s)`)
-        if (transcriber) {
-          transcribe(samples)
-        }
-      })
-      await window.api.audio.systemStart(bufferDuration)
-      setLastFlushTime(Date.now())
-      setStatus('capturing')
-      return
-    }
-
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { deviceId: { exact: selectedSourceId } },
-    })
-
-    mediaStream = stream
-    recordedChunks = []
-
-    const recorder = new MediaRecorder(stream)
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        recordedChunks.push(e.data)
-      }
-    }
-    recorder.start()
-    mediaRecorder = recorder
-    console.log(`[AudioSettings] MediaRecorder started, mimeType=${recorder.mimeType}`)
-
-    setLastFlushTime(Date.now())
-    flushTimer = setInterval(() => flushBuffer(), bufferDuration * 1000)
-    setStatus('capturing')
-  } catch (err) {
-    console.error('Audio capture failed:', err)
-    setStatus('error')
-  }
-}
-
-export function stopCapture() {
-  if (systemDataCleanup) {
-    systemDataCleanup()
-    systemDataCleanup = null
-    window.api.audio.systemStop()
-  }
-
-  if (flushTimer) {
-    clearInterval(flushTimer)
-    flushTimer = null
-  }
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop()
-  }
-  mediaRecorder = null
-  mediaStream?.getTracks().forEach((t) => t.stop())
-  mediaStream = null
-  useAudioStore.getState().setStatus('inactive')
-}
+const inputCls = 'px-2 py-1 text-sm bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-900 dark:text-gray-100 disabled:opacity-50 transition-colors'
 
 export default function AudioSettings() {
   const {
     status, sources, selectedSourceId, whisperStatus, whisperProgress, whisperMessage,
-    bufferDuration, whisperModel, systemAudioAvailable,
+    bufferDuration, whisperModel, systemAudioAvailable, captureError,
     setSources, setSelectedSourceId,
     setWhisperStatus, setWhisperProgress, setWhisperMessage,
     setBufferDuration, setWhisperModel,
-    setSystemAudioAvailable,
+    setSystemAudioAvailable, setCaptureError,
   } = useAudioStore()
   const { apiKeySet, hfTokenSet } = useScribeStore()
   const [apiKeyInput, setApiKeyInput] = useState('')
@@ -301,36 +26,25 @@ export default function AudioSettings() {
     setWhisperMessage('Initializing...')
 
     try {
-      transcriber = await (pipeline as any)(
-        'automatic-speech-recognition',
-        `onnx-community/whisper-${whisperModel}`,
-        {
-          dtype: 'q8',
-          device: 'wasm',
-          progress_callback: (info: { status: string; progress?: number; file?: string }) => {
-            switch (info.status) {
-              case 'initiate':
-                setWhisperMessage(`Downloading ${info.file}...`)
-                break
-              case 'download':
-                setWhisperMessage(`Downloading ${info.file}...`)
-                break
-              case 'progress':
-                if (info.progress !== undefined) setWhisperProgress(info.progress)
-                setWhisperMessage(`Downloading ${info.file}...`)
-                break
-              case 'done':
-                setWhisperProgress(100)
-                setWhisperMessage(`Downloaded ${info.file}`)
-                break
-              case 'ready':
-                setWhisperMessage('Pipeline ready')
-                break
-            }
-          },
-        },
-      ) as AutomaticSpeechRecognitionPipeline
-
+      await loadWhisperModel(whisperModel, (info) => {
+        switch (info.status) {
+          case 'initiate':
+          case 'download':
+            setWhisperMessage(`Downloading ${info.file}...`)
+            break
+          case 'progress':
+            if (info.progress !== undefined) setWhisperProgress(info.progress)
+            setWhisperMessage(`Downloading ${info.file}...`)
+            break
+          case 'done':
+            setWhisperProgress(100)
+            setWhisperMessage(`Downloaded ${info.file}`)
+            break
+          case 'ready':
+            setWhisperMessage('Pipeline ready')
+            break
+        }
+      })
       setWhisperStatus('ready')
       setWhisperMessage('Model loaded')
     } catch (err) {
@@ -349,7 +63,6 @@ export default function AudioSettings() {
           id: d.deviceId,
           name: d.label || `Microphone ${d.deviceId.slice(0, 8)}`,
         }))
-
       if (systemAudioAvailable) {
         audioInputs.unshift({ id: '__system__', name: 'System Audio (macOS)' })
       }
@@ -360,9 +73,7 @@ export default function AudioSettings() {
   }
 
   useEffect(() => {
-    window.api.audio.systemStatus().then(({ available }) => {
-      setSystemAudioAvailable(available)
-    })
+    window.api.audio.systemStatus().then(({ available }) => setSystemAudioAvailable(available))
   }, [])
 
   useEffect(() => {
@@ -387,8 +98,8 @@ export default function AudioSettings() {
   const capturing = status === 'capturing'
 
   return (
-    <div className="p-3 flex flex-col gap-3">
-      <div className="text-sm font-medium text-gray-300">Audio Settings</div>
+    <div className="p-3 flex flex-col gap-3 bg-slate-50 dark:bg-gray-800/50 border-b border-slate-200 dark:border-gray-700">
+      <div className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Audio Settings</div>
 
       {/* Whisper model controls */}
       <div className="flex items-center gap-2">
@@ -396,7 +107,8 @@ export default function AudioSettings() {
           value={whisperModel}
           onChange={(e) => setWhisperModel(e.target.value as 'tiny' | 'base' | 'small')}
           disabled={whisperStatus === 'loading' || capturing}
-          className="px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded disabled:opacity-50"
+          aria-label="Whisper model size"
+          className={`flex-1 ${inputCls}`}
         >
           <option value="tiny">Whisper Tiny (fastest)</option>
           <option value="base">Whisper Base (balanced)</option>
@@ -406,7 +118,8 @@ export default function AudioSettings() {
         <button
           onClick={loadModel}
           disabled={whisperStatus === 'loading'}
-          className="px-3 py-1 text-sm rounded bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+          aria-label={whisperStatus === 'ready' ? 'Whisper model is loaded' : 'Load Whisper model'}
+          className="px-3 py-1 text-sm rounded font-medium bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition-colors whitespace-nowrap"
         >
           {whisperStatus === 'loading'
             ? `${Math.round(whisperProgress)}% — ${whisperMessage || 'Loading...'}`
@@ -420,10 +133,10 @@ export default function AudioSettings() {
 
       {/* Status message */}
       {whisperStatus === 'loading' && whisperMessage && (
-        <div className="text-xs text-gray-400 truncate">{whisperMessage}</div>
+        <div className="text-xs text-slate-500 dark:text-gray-400 truncate">{whisperMessage}</div>
       )}
       {whisperStatus === 'error' && whisperMessage && (
-        <div className="text-xs text-red-400 truncate">{whisperMessage}</div>
+        <div className="text-xs text-red-600 dark:text-red-400 truncate">{whisperMessage}</div>
       )}
 
       {/* Source selection */}
@@ -432,9 +145,10 @@ export default function AudioSettings() {
           value={selectedSourceId || ''}
           onChange={(e) => setSelectedSourceId(e.target.value || null)}
           disabled={capturing}
-          className="flex-1 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded disabled:opacity-50"
+          aria-label="Audio source"
+          className={`flex-1 ${inputCls}`}
         >
-          <option value="">Select audio source...</option>
+          <option value="">Select audio source…</option>
           {sources.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -445,17 +159,58 @@ export default function AudioSettings() {
         <button
           onClick={refreshSources}
           disabled={capturing}
-          className="px-2 py-1 text-xs text-gray-400 hover:text-gray-200 disabled:opacity-50"
-          title="Refresh sources"
+          aria-label="Refresh audio sources"
+          className="px-2 py-1 text-xs text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 disabled:opacity-50 transition-colors"
         >
           Refresh
         </button>
       </div>
 
+      {/* macOS screen recording permission */}
+      {systemAudioAvailable && (
+        <div className="flex flex-col gap-1.5">
+          <button
+            onClick={() => window.api.shell.openExternal('x-apple.systempreferences:com.apple.systempreferences.PrivacyPreferencesExtension?ScreenCapture')}
+            className="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-left transition-colors"
+            aria-label="Open Screen and System Audio Recording permissions in System Settings"
+          >
+            Open Screen &amp; System Audio Recording permissions ↗
+          </button>
+          {captureError?.toLowerCase().includes('denied') && (
+            <div
+              className="text-xs bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 rounded p-2 space-y-1.5"
+              role="alert"
+            >
+              <p className="text-red-700 dark:text-red-300 font-medium">Permission denied</p>
+              <p className="text-red-600 dark:text-red-400 leading-relaxed">
+                In System Settings, click <strong className="text-red-700 dark:text-red-300">+</strong> under <em>System Audio Recording Only</em> and add:
+              </p>
+              <button
+                onClick={() => navigator.clipboard.writeText('node_modules/electron/dist/Electron.app')}
+                aria-label="Copy Electron app path to clipboard"
+                className="font-mono text-red-700 dark:text-red-200 bg-red-100 dark:bg-red-950/60 rounded px-1.5 py-0.5 hover:bg-red-200 dark:hover:bg-red-950 w-full text-left truncate transition-colors"
+                title="Click to copy path"
+              >
+                node_modules/electron/dist/Electron.app
+              </button>
+              <p className="text-red-500 dark:text-red-500">Use <strong>⇧⌘G</strong> in the file picker to paste the full path.</p>
+              <button
+                onClick={() => setCaptureError(null)}
+                aria-label="Dismiss permission error"
+                className="text-red-500 hover:text-red-700 dark:hover:text-red-300 text-xs transition-colors"
+              >
+                dismiss
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Buffer duration */}
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <label>Buffer:</label>
+      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-gray-400">
+        <label htmlFor="buffer-range" className="text-xs">Buffer:</label>
         <input
+          id="buffer-range"
           type="range"
           min={10}
           max={60}
@@ -463,9 +218,10 @@ export default function AudioSettings() {
           value={bufferDuration}
           onChange={(e) => setBufferDuration(Number(e.target.value))}
           disabled={capturing}
-          className="flex-1"
+          aria-label={`Buffer duration: ${bufferDuration} seconds`}
+          className="flex-1 accent-amber-500"
         />
-        <span className="w-8 text-right">{bufferDuration}s</span>
+        <span className="w-8 text-right text-xs font-mono">{bufferDuration}s</span>
       </div>
 
       {/* API Key */}
@@ -476,15 +232,20 @@ export default function AudioSettings() {
             value={apiKeyInput}
             onChange={(e) => setApiKeyInput(e.target.value)}
             placeholder="Claude API key"
-            className="flex-1 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded"
+            aria-label="Claude API key"
+            className={`flex-1 ${inputCls}`}
           />
           <button
             onClick={handleSetApiKey}
-            className="px-3 py-1 text-sm bg-purple-600 hover:bg-purple-700 rounded"
+            aria-label="Save Claude API key"
+            className="px-3 py-1 text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
           >
             Set
           </button>
         </div>
+      )}
+      {apiKeySet && (
+        <div className="text-xs text-green-600 dark:text-green-400">Claude API key configured</div>
       )}
 
       {/* HuggingFace Token */}
@@ -495,15 +256,20 @@ export default function AudioSettings() {
             value={hfTokenInput}
             onChange={(e) => setHfTokenInput(e.target.value)}
             placeholder="HuggingFace token (speaker diarization)"
-            className="flex-1 px-2 py-1 text-sm bg-gray-900 border border-gray-600 rounded"
+            aria-label="HuggingFace token for speaker diarization"
+            className={`flex-1 ${inputCls}`}
           />
           <button
             onClick={handleSetHfToken}
-            className="px-3 py-1 text-sm bg-yellow-600 hover:bg-yellow-700 rounded"
+            aria-label="Save HuggingFace token"
+            className="px-3 py-1 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white rounded transition-colors"
           >
             Set
           </button>
         </div>
+      )}
+      {hfTokenSet && (
+        <div className="text-xs text-green-600 dark:text-green-400">HuggingFace token configured</div>
       )}
     </div>
   )

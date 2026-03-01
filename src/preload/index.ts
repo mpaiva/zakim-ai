@@ -59,6 +59,12 @@ const api = {
     },
   },
 
+  // ── Shell ──
+  shell: {
+    openExternal: (url: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.SHELL_OPEN_EXTERNAL, url),
+  },
+
   // ── Settings ──
   settings: {
     getApiKey: (): Promise<string | null> =>

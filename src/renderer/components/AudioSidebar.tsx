@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react'
 import { useAudioStore } from '../stores/audioStore'
 import { useScribeStore } from '../stores/scribeStore'
 import { useIrcStore } from '../stores/ircStore'
-import AudioSettings, { startCapture, stopCapture } from './AudioSettings'
+import AudioSettings from './AudioSettings'
+import AudioLevelBars from './AudioLevelBars'
+import { startCapture, stopCapture } from '../audioCapture'
 import AutoScribeBanner from './AutoScribeBanner'
 import ScribeMessageRow from './ScribeMessageRow'
 import SpeakerSelect from './SpeakerSelect'
@@ -11,6 +13,8 @@ import type { ScribeMessage, TranscriptionResult } from '../../shared/types'
 type FeedItem =
   | { kind: 'transcription'; data: TranscriptionResult; sortTime: number }
   | { kind: 'scribe'; data: ScribeMessage; sortTime: number }
+
+const btnXs = 'px-2 py-1 text-xs rounded font-medium transition-colors disabled:opacity-40'
 
 export default function AudioSidebar() {
   const [showSettings, setShowSettings] = useState(false)
@@ -100,15 +104,16 @@ export default function AudioSidebar() {
   const approvedCount = messages.filter((m) => m.status === 'approved').length
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 bg-white dark:bg-gray-900">
       {/* Control bar */}
-      <div className="p-2 border-b border-gray-700 space-y-2">
+      <div className="p-2 border-b border-slate-200 dark:border-gray-700 space-y-2">
         <div className="flex items-center gap-1.5">
           {/* Start / Stop */}
           {capturing ? (
             <button
               onClick={stopCapture}
-              className="px-2 py-1 text-xs rounded bg-red-600 hover:bg-red-700 font-medium"
+              aria-label="Stop audio capture"
+              className={`${btnXs} bg-red-600 hover:bg-red-700 text-white`}
             >
               Stop
             </button>
@@ -116,26 +121,40 @@ export default function AudioSidebar() {
             <button
               onClick={startCapture}
               disabled={!canStart}
-              className="px-2 py-1 text-xs rounded bg-green-600 hover:bg-green-700 font-medium disabled:opacity-50"
+              aria-label={canStart ? 'Start audio capture' : 'Select a source and load the Whisper model first'}
+              title={canStart ? undefined : 'Select a source and load the Whisper model first'}
+              className={`${btnXs} bg-green-600 hover:bg-green-700 text-white`}
             >
               Start
             </button>
           )}
 
           {/* Review / Auto toggle */}
-          <div className="flex items-center gap-0.5 bg-gray-900 rounded p-0.5">
+          <div
+            className="flex items-center gap-0.5 bg-slate-100 dark:bg-gray-800 rounded p-0.5"
+            role="radiogroup"
+            aria-label="Scribe mode"
+          >
             <button
               onClick={() => setMode('review')}
-              className={`px-2 py-0.5 text-xs rounded ${
-                mode === 'review' ? 'bg-blue-600' : 'hover:bg-gray-700'
+              role="radio"
+              aria-checked={mode === 'review'}
+              className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${
+                mode === 'review'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
               }`}
             >
               Review
             </button>
             <button
               onClick={() => setMode('auto')}
-              className={`px-2 py-0.5 text-xs rounded ${
-                mode === 'auto' ? 'bg-orange-600' : 'hover:bg-gray-700'
+              role="radio"
+              aria-checked={mode === 'auto'}
+              className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${
+                mode === 'auto'
+                  ? 'bg-amber-500 text-white'
+                  : 'text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
               }`}
             >
               Auto
@@ -150,20 +169,23 @@ export default function AudioSidebar() {
           {stickySpeaker && (
             <button
               onClick={() => setStickySpeaker(null)}
-              className="text-xs text-gray-500 hover:text-gray-300"
-              title="Clear sticky speaker"
+              aria-label="Clear sticky speaker"
+              className="text-xs text-slate-400 dark:text-gray-600 hover:text-slate-700 dark:hover:text-gray-300 transition-colors"
             >
               Clear
             </button>
           )}
 
-          {/* Settings gear */}
+          {/* Settings */}
           <button
             onClick={() => setShowSettings((v) => !v)}
-            className={`ml-auto px-1.5 py-0.5 text-xs rounded ${
-              showSettings ? 'bg-gray-600' : 'hover:bg-gray-700'
+            aria-label={showSettings ? 'Hide settings' : 'Show settings'}
+            aria-pressed={showSettings}
+            className={`ml-auto px-1.5 py-0.5 text-xs rounded font-medium transition-colors ${
+              showSettings
+                ? 'bg-slate-300 dark:bg-gray-600 text-slate-800 dark:text-gray-100'
+                : 'text-slate-500 dark:text-gray-500 hover:bg-slate-100 dark:hover:bg-gray-700'
             }`}
-            title="Settings"
           >
             Settings
           </button>
@@ -172,13 +194,17 @@ export default function AudioSidebar() {
         {/* Auto-mode banner */}
         {mode === 'auto' && <AutoScribeBanner />}
 
+        {/* Audio level bars — own row, shown while capturing */}
+        <AudioLevelBars />
+
         {/* Batch controls */}
         {mode !== 'auto' && (pendingCount > 0 || approvedCount > 0) && (
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {pendingCount > 0 && (
               <button
                 onClick={approveAll}
-                className="px-2 py-1 text-xs bg-green-700 hover:bg-green-600 rounded"
+                aria-label={`Approve all ${pendingCount} pending messages`}
+                className={`${btnXs} bg-green-600 hover:bg-green-700 text-white`}
               >
                 Approve All ({pendingCount})
               </button>
@@ -187,7 +213,8 @@ export default function AudioSidebar() {
               <button
                 onClick={sendAllApproved}
                 disabled={ircStatus !== 'connected' || !channel}
-                className="px-2 py-1 text-xs bg-blue-700 hover:bg-blue-600 rounded disabled:opacity-50"
+                aria-label={`Send all ${approvedCount} approved messages to IRC`}
+                className={`${btnXs} bg-blue-600 hover:bg-blue-700 text-white`}
               >
                 Send All ({approvedCount})
               </button>
@@ -198,13 +225,22 @@ export default function AudioSidebar() {
 
       {/* Error banner */}
       {error && (
-        <div className="mx-2 mt-2 px-2 py-1.5 text-xs text-red-300 bg-red-900/50 border border-red-700/50 rounded">
+        <div
+          className="mx-2 mt-2 px-2 py-1.5 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 rounded"
+          role="alert"
+        >
           {error}
-          <button onClick={() => setError(null)} className="ml-2 text-red-400 hover:text-red-200">dismiss</button>
+          <button
+            onClick={() => setError(null)}
+            aria-label="Dismiss error"
+            className="ml-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-200"
+          >
+            dismiss
+          </button>
         </div>
       )}
 
-      {/* AudioSettings — always mounted to preserve useEffect hooks, hidden when not active */}
+      {/* AudioSettings — always mounted, hidden when not active */}
       <div className={showSettings ? '' : 'hidden'}>
         <AudioSettings />
       </div>
@@ -213,7 +249,7 @@ export default function AudioSidebar() {
       {!showSettings && (
         <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
           {feed.length === 0 && (
-            <div className="text-gray-500 text-sm italic">
+            <div className="text-slate-400 dark:text-gray-600 text-sm italic px-1">
               {apiKeySet
                 ? 'Transcription and scribe messages will appear here'
                 : 'Set your Claude API key in Settings to enable the AI scribe'}
@@ -226,19 +262,20 @@ export default function AudioSidebar() {
               const allAssigned = t.segments.length > 0 && t.segments.every((s) => s.speaker !== null)
               const isProcessing = processingId === t.id
               return (
-                <div key={t.id} className="bg-gray-800 rounded p-2 space-y-1.5">
+                <div key={t.id} className="bg-slate-50 dark:bg-gray-800 rounded p-2 space-y-1.5 border border-slate-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-slate-400 dark:text-gray-500 font-mono">
                       {new Date(t.timestamp).toLocaleTimeString()} — {t.duration}s
                     </span>
                     {apiKeySet && (
                       <button
                         onClick={() => processSpeakers(t.id)}
                         disabled={!allAssigned || isProcessing}
-                        className="px-2 py-0.5 text-xs bg-purple-700 hover:bg-purple-600 rounded disabled:opacity-50"
                         title={allAssigned ? 'Process with speaker attribution' : 'Assign all speakers first'}
+                        aria-label={allAssigned ? 'Process transcription with speaker attribution' : 'Assign all speakers before processing'}
+                        className={`${btnXs} bg-purple-600 hover:bg-purple-700 text-white`}
                       >
-                        {isProcessing ? 'Processing...' : 'Process'}
+                        {isProcessing ? 'Processing…' : 'Process'}
                       </button>
                     )}
                   </div>
@@ -249,7 +286,7 @@ export default function AudioSidebar() {
                         value={seg.speaker}
                         onChange={(speaker) => assignSpeaker(t.id, seg.id, speaker)}
                       />
-                      <span className="text-xs text-gray-300 flex-1 leading-relaxed">
+                      <span className="text-xs text-slate-700 dark:text-gray-300 flex-1 leading-relaxed font-mono">
                         {seg.text}
                       </span>
                     </div>
@@ -277,23 +314,28 @@ export default function AudioSidebar() {
 
       {/* Speaker queue */}
       {queue.length > 0 && (
-        <div className="px-2 py-2 border-t border-gray-700">
-          <div className="text-xs text-gray-500 mb-1.5">Speaker Queue</div>
+        <div className="px-2 py-2 border-t border-slate-200 dark:border-gray-700">
+          <div className="text-xs text-slate-400 dark:text-gray-600 mb-1.5 font-medium uppercase tracking-wide">
+            Speaker Queue
+          </div>
           <div className="space-y-1">
             {queue.map((entry) => (
-              <div key={entry.nick} className="flex items-center justify-between text-sm bg-gray-800 rounded px-2 py-1">
-                <span className="text-gray-200">
+              <div
+                key={entry.nick}
+                className="flex items-center justify-between text-sm bg-slate-50 dark:bg-gray-800 rounded px-2 py-1 border border-slate-200 dark:border-gray-700"
+              >
+                <span className="text-slate-800 dark:text-gray-200 font-mono text-xs">
                   {entry.nick}
                   {entry.comment && (
-                    <span className="text-gray-500 ml-1.5">— {entry.comment}</span>
+                    <span className="text-slate-400 dark:text-gray-500 ml-1.5 font-sans">— {entry.comment}</span>
                   )}
                 </span>
                 <button
                   onClick={() => removeFromQueue(entry.nick)}
-                  className="text-xs text-gray-500 hover:text-gray-300 ml-2"
-                  title="Remove from queue"
+                  aria-label={`Remove ${entry.nick} from queue`}
+                  className="text-xs text-slate-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 ml-2 transition-colors"
                 >
-                  x
+                  ✕
                 </button>
               </div>
             ))}

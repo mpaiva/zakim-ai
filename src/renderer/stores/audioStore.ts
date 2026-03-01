@@ -13,6 +13,8 @@ interface AudioState {
   whisperModel: 'tiny' | 'base' | 'small'
   transcribing: boolean
   lastFlushTime: number
+  lastRms: number
+  captureError: string | null
   systemAudioAvailable: boolean
   stickySpeaker: string | null
 
@@ -27,6 +29,8 @@ interface AudioState {
   setWhisperModel: (model: AudioState['whisperModel']) => void
   setTranscribing: (v: boolean) => void
   setLastFlushTime: (t: number) => void
+  setLastRms: (rms: number) => void
+  setCaptureError: (msg: string | null) => void
   setSystemAudioAvailable: (v: boolean) => void
   clearTranscriptions: () => void
   setStickySpeaker: (name: string | null) => void
@@ -45,6 +49,8 @@ export const useAudioStore = create<AudioState>((set) => ({
   whisperModel: 'base',
   transcribing: false,
   lastFlushTime: 0,
+  lastRms: -1,
+  captureError: null,
   systemAudioAvailable: false,
   stickySpeaker: null,
 
@@ -60,6 +66,8 @@ export const useAudioStore = create<AudioState>((set) => ({
   setWhisperModel: (model) => set({ whisperModel: model }),
   setTranscribing: (v) => set({ transcribing: v }),
   setLastFlushTime: (t) => set({ lastFlushTime: t }),
+  setLastRms: (rms) => set({ lastRms: rms }),
+  setCaptureError: (msg) => set({ captureError: msg }),
   setSystemAudioAvailable: (v) => set({ systemAudioAvailable: v }),
   clearTranscriptions: () => set({ transcriptions: [] }),
   setStickySpeaker: (name) => set({ stickySpeaker: name }),

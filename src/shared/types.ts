@@ -111,6 +111,7 @@ export const IPC = {
   SETTINGS_SET_API_KEY: 'settings:set-api-key',
   SETTINGS_GET_HF_TOKEN: 'settings:get-hf-token',
   SETTINGS_SET_HF_TOKEN: 'settings:set-hf-token',
+  SHELL_OPEN_EXTERNAL: 'shell:open-external',
 } as const
 
 // ── Whisper Word-Level Types ──
