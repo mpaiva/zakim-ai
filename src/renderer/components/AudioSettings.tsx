@@ -115,20 +115,28 @@ export default function AudioSettings() {
           <option value="small">Whisper Small (best)</option>
         </select>
 
-        <button
-          onClick={loadModel}
-          disabled={whisperStatus === 'loading'}
-          aria-label={whisperStatus === 'ready' ? 'Whisper model is loaded' : 'Load Whisper model'}
-          className="px-3 py-1 text-sm rounded font-medium bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition-colors whitespace-nowrap"
-        >
-          {whisperStatus === 'loading'
-            ? `${Math.round(whisperProgress)}% — ${whisperMessage || 'Loading...'}`
-            : whisperStatus === 'ready'
-              ? 'Model Ready'
+        {whisperStatus === 'ready' ? (
+          <span
+            role="status"
+            aria-label="Whisper model is loaded"
+            className="px-3 py-1 text-sm rounded font-medium bg-green-700/20 dark:bg-green-700/30 text-green-700 dark:text-green-400 border border-green-600/30 dark:border-green-600/40 whitespace-nowrap"
+          >
+            Model Ready
+          </span>
+        ) : (
+          <button
+            onClick={loadModel}
+            disabled={whisperStatus === 'loading'}
+            aria-label={whisperStatus === 'error' ? 'Retry loading Whisper model' : 'Load Whisper model'}
+            className="px-3 py-1 text-sm rounded font-medium bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition-colors whitespace-nowrap"
+          >
+            {whisperStatus === 'loading'
+              ? `${Math.round(whisperProgress)}%`
               : whisperStatus === 'error'
                 ? 'Error — Retry'
                 : 'Load Model'}
-        </button>
+          </button>
+        )}
       </div>
 
       {/* Status message */}

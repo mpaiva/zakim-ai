@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAudioStore } from '../stores/audioStore'
 import { useScribeStore } from '../stores/scribeStore'
 import { useIrcStore } from '../stores/ircStore'
@@ -17,7 +17,10 @@ type FeedItem =
 const btnXs = 'px-2 py-1 text-xs rounded font-medium transition-colors disabled:opacity-40'
 
 export default function AudioSidebar() {
-  const [showSettings, setShowSettings] = useState(false)
+  // Open settings by default until the Whisper model is loaded; auto-close once ready
+  const [showSettings, setShowSettings] = useState(
+    () => useAudioStore.getState().whisperStatus !== 'ready'
+  )
 
   // Audio store
   const status = useAudioStore((s) => s.status)
@@ -40,6 +43,11 @@ export default function AudioSidebar() {
 
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Auto-close settings once the Whisper model becomes ready
+  useEffect(() => {
+    if (whisperStatus === 'ready') setShowSettings(false)
+  }, [whisperStatus])
 
   const capturing = status === 'capturing'
   const canStart = !!selectedSourceId && whisperStatus === 'ready'
@@ -113,7 +121,7 @@ export default function AudioSidebar() {
             <button
               onClick={stopCapture}
               aria-label="Stop audio capture"
-              className={`${btnXs} bg-red-600 hover:bg-red-700 text-white`}
+              className="px-3 py-1.5 text-sm rounded font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors shrink-0"
             >
               Stop
             </button>
@@ -123,7 +131,7 @@ export default function AudioSidebar() {
               disabled={!canStart}
               aria-label={canStart ? 'Start audio capture' : 'Select a source and load the Whisper model first'}
               title={canStart ? undefined : 'Select a source and load the Whisper model first'}
-              className={`${btnXs} bg-green-700 hover:bg-green-800 text-white`}
+              className="px-3 py-1.5 text-sm rounded font-semibold bg-green-700 hover:bg-green-800 text-white disabled:opacity-40 transition-colors shrink-0"
             >
               Start
             </button>
@@ -165,6 +173,7 @@ export default function AudioSidebar() {
           <SpeakerSelect
             value={stickySpeaker}
             onChange={(name) => setStickySpeaker(name)}
+            className="flex-1 min-w-0"
           />
           {stickySpeaker && (
             <button

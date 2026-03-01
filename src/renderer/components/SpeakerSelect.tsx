@@ -4,11 +4,12 @@ import { useIrcStore } from '../stores/ircStore'
 interface SpeakerSelectProps {
   value: string | null
   onChange: (speaker: string) => void
+  className?: string
 }
 
-const selectCls = 'w-24 px-1 py-0.5 text-xs font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-800 dark:text-gray-200 transition-colors'
+const baseCls = 'px-1 py-0.5 text-xs font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-800 dark:text-gray-200 transition-colors'
 
-export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
+export default function SpeakerSelect({ value, onChange, className = 'w-24' }: SpeakerSelectProps) {
   const users = useIrcStore((s) => s.users)
   const [customMode, setCustomMode] = useState(false)
   const [customName, setCustomName] = useState('')
@@ -40,7 +41,7 @@ export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
         autoFocus
         placeholder="Name…"
         aria-label="Custom speaker name"
-        className="w-24 px-1 py-0.5 text-xs font-mono bg-white dark:bg-gray-900 border border-amber-400 rounded text-slate-800 dark:text-gray-200"
+        className={`${baseCls} ${className} border-amber-400`}
       />
     )
   }
@@ -58,7 +59,7 @@ export default function SpeakerSelect({ value, onChange }: SpeakerSelectProps) {
         }
       }}
       aria-label="Select speaker"
-      className={selectCls}
+      className={`${baseCls} ${className}`}
     >
       <option value="">Speaker…</option>
       {isCustomValue && (
