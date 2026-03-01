@@ -159,7 +159,7 @@ export default function App() {
             audioStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 dark:bg-gray-600'
           } />
           <span className="text-slate-500 dark:text-gray-400">Audio</span>
-          {audioStatus !== 'idle' && (
+          {(audioStatus === 'capturing' || audioStatus === 'error') && (
             <span className="text-slate-700 dark:text-gray-300">{audioStatus}</span>
           )}
         </div>
@@ -177,8 +177,8 @@ export default function App() {
             whisperStatus === 'error' ? 'bg-red-500' : 'bg-slate-300 dark:bg-gray-600'
           } />
           <span className="text-slate-500 dark:text-gray-400">Whisper</span>
-          {whisperStatus !== 'idle' && (
-            <span className={`${whisperStatus === 'error' ? 'text-red-500' : 'text-slate-700 dark:text-gray-300'}`}>
+          {(whisperStatus === 'loading' || whisperStatus === 'ready' || whisperStatus === 'error') && (
+            <span className={whisperStatus === 'error' ? 'text-red-500' : 'text-slate-700 dark:text-gray-300'}>
               {whisperStatus}
             </span>
           )}
