@@ -20,8 +20,8 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
 
   if (msg.type === 'join' || msg.type === 'part' || msg.type === 'quit') {
     return (
-      <div className="text-xs text-slate-400 dark:text-gray-600 py-0.5 leading-relaxed">
-        <span className="text-slate-300 dark:text-gray-700 tabular-nums">{time}</span>
+      <div className="text-xs text-slate-500 dark:text-gray-400 py-0.5 leading-relaxed">
+        <span className="text-slate-500 dark:text-gray-400 tabular-nums">{time}</span>
         {' — '}
         {msg.text}
       </div>
@@ -80,7 +80,7 @@ export default function ChatPanel() {
       {/* Topic bar */}
       {topic && (
         <div className="px-3 py-1.5 text-xs text-slate-500 dark:text-gray-400 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 truncate font-mono">
-          <span className="text-slate-400 dark:text-gray-600">topic:</span> {topic}
+          <span className="text-slate-500 dark:text-gray-400">topic:</span> {topic}
         </div>
       )}
 
@@ -94,7 +94,7 @@ export default function ChatPanel() {
           aria-live="polite"
         >
           {messages.length === 0 && (
-            <div className="text-slate-400 dark:text-gray-600 text-sm italic">
+            <div className="text-slate-500 dark:text-gray-400 text-sm italic">
               {status === 'connected'
                 ? 'Join a channel to start chatting'
                 : 'Connect to an IRC server to begin'}
@@ -111,7 +111,7 @@ export default function ChatPanel() {
             className="w-36 border-l border-slate-200 dark:border-gray-700 p-2 overflow-y-auto bg-slate-50 dark:bg-gray-800"
             aria-label="IRC users"
           >
-            <div className="text-xs text-slate-400 dark:text-gray-500 mb-1.5 font-medium uppercase tracking-wide">
+            <div className="text-xs text-slate-500 dark:text-gray-400 mb-1.5 font-medium uppercase tracking-wide">
               Users ({users.length})
             </div>
             {users.map((u) => (
@@ -145,7 +145,7 @@ export default function ChatPanel() {
           type="submit"
           disabled={status !== 'connected' || !input.trim()}
           aria-label="Send message"
-          className="px-4 py-2 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-40 transition-colors"
+          className="px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-gray-900 disabled:opacity-40 transition-colors"
         >
           Send
         </button>

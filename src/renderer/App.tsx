@@ -126,7 +126,7 @@ export default function App() {
       <MeetingActions />
 
       {/* Status bar */}
-      <div className="flex items-center gap-3 px-3 py-1.5 text-xs bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-500">
+      <div className="flex items-center gap-3 px-3 py-1.5 text-xs bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-400">
         <StatusDot color={
           ircStatus === 'connected' ? 'bg-green-500' :
           ircStatus === 'connecting' ? 'bg-yellow-500' :
@@ -134,7 +134,7 @@ export default function App() {
         } />
         <span className="font-mono">IRC: {ircStatus}</span>
 
-        <span className="text-slate-300 dark:text-gray-700">·</span>
+        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
 
         <StatusDot color={
           audioStatus === 'capturing' ? 'bg-green-500' :
@@ -142,7 +142,7 @@ export default function App() {
         } />
         <span className="font-mono">Audio: {audioStatus}</span>
 
-        <span className="text-slate-300 dark:text-gray-700">·</span>
+        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
 
         <StatusDot color={
           whisperStatus === 'ready' ? 'bg-green-500' :
@@ -151,12 +151,12 @@ export default function App() {
         } />
         <span className="font-mono">Whisper: {whisperStatus}</span>
 
-        <span className="text-slate-300 dark:text-gray-700">·</span>
+        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
 
         <StatusDot color={scribeMode === 'auto' ? 'bg-amber-500' : 'bg-blue-500'} />
         <span className="font-mono">Scribe: {scribeMode}</span>
 
-        <span className="text-slate-300 dark:text-gray-700">·</span>
+        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
 
         <StatusDot color={
           scribeProcessing ? 'bg-purple-500' :
@@ -168,7 +168,7 @@ export default function App() {
         </span>
 
         <span className="ml-auto flex items-center gap-2">
-          <span className="text-slate-400 dark:text-gray-600">Zakim AI v0.1.0</span>
+          <span className="text-slate-500 dark:text-gray-400">Zakim AI v0.1.0</span>
           <button
             onClick={() => setIsDark((v) => !v)}
             className="px-2 py-0.5 rounded text-xs bg-slate-200 hover:bg-slate-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-slate-600 dark:text-gray-300 transition-colors"

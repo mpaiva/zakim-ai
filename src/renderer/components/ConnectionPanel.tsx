@@ -99,7 +99,7 @@ export default function ConnectionPanel() {
         className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
           connected
             ? 'bg-red-600 hover:bg-red-700 text-white'
-            : 'bg-amber-500 hover:bg-amber-600 text-white'
+            : 'bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold'
         }`}
       >
         {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
@@ -122,7 +122,7 @@ export default function ConnectionPanel() {
         onClick={handleJoin}
         disabled={!connected || !channel}
         aria-label="Join IRC channel"
-        className="px-3 py-1 text-sm rounded font-medium bg-green-600 hover:bg-green-700 text-white disabled:opacity-50 transition-colors"
+        className="px-3 py-1 text-sm rounded font-medium bg-green-700 hover:bg-green-800 text-white disabled:opacity-50 transition-colors"
       >
         Join
       </button>

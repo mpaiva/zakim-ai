@@ -62,7 +62,7 @@ export default function ScribeMessageRow({
               <button
                 onClick={() => { onEdit(editText); setEditing(false) }}
                 aria-label="Save edit"
-                className={`${btnBase} bg-green-600 hover:bg-green-700 text-white`}
+                className={`${btnBase} bg-green-700 hover:bg-green-800 text-white`}
               >
                 Save
               </button>
@@ -87,7 +87,7 @@ export default function ScribeMessageRow({
             <button
               onClick={onApprove}
               aria-label="Approve message"
-              className={`${btnBase} bg-green-600 hover:bg-green-700 text-white`}
+              className={`${btnBase} bg-green-700 hover:bg-green-800 text-white`}
             >
               OK
             </button>

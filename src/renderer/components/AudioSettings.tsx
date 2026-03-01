@@ -262,7 +262,7 @@ export default function AudioSettings() {
           <button
             onClick={handleSetHfToken}
             aria-label="Save HuggingFace token"
-            className="px-3 py-1 text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white rounded transition-colors"
+            className="px-3 py-1 text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-gray-900 rounded transition-colors"
           >
             Set
           </button>

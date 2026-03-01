@@ -123,7 +123,7 @@ export default function AudioSidebar() {
               disabled={!canStart}
               aria-label={canStart ? 'Start audio capture' : 'Select a source and load the Whisper model first'}
               title={canStart ? undefined : 'Select a source and load the Whisper model first'}
-              className={`${btnXs} bg-green-600 hover:bg-green-700 text-white`}
+              className={`${btnXs} bg-green-700 hover:bg-green-800 text-white`}
             >
               Start
             </button>
@@ -153,7 +153,7 @@ export default function AudioSidebar() {
               aria-checked={mode === 'auto'}
               className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${
                 mode === 'auto'
-                  ? 'bg-amber-500 text-white'
+                  ? 'bg-amber-500 text-gray-900 font-semibold'
                   : 'text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
               }`}
             >
@@ -170,7 +170,7 @@ export default function AudioSidebar() {
             <button
               onClick={() => setStickySpeaker(null)}
               aria-label="Clear sticky speaker"
-              className="text-xs text-slate-400 dark:text-gray-600 hover:text-slate-700 dark:hover:text-gray-300 transition-colors"
+              className="text-xs text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
             >
               Clear
             </button>
@@ -184,7 +184,7 @@ export default function AudioSidebar() {
             className={`ml-auto px-1.5 py-0.5 text-xs rounded font-medium transition-colors ${
               showSettings
                 ? 'bg-slate-300 dark:bg-gray-600 text-slate-800 dark:text-gray-100'
-                : 'text-slate-500 dark:text-gray-500 hover:bg-slate-100 dark:hover:bg-gray-700'
+                : 'text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700'
             }`}
           >
             Settings
@@ -204,7 +204,7 @@ export default function AudioSidebar() {
               <button
                 onClick={approveAll}
                 aria-label={`Approve all ${pendingCount} pending messages`}
-                className={`${btnXs} bg-green-600 hover:bg-green-700 text-white`}
+                className={`${btnXs} bg-green-700 hover:bg-green-800 text-white`}
               >
                 Approve All ({pendingCount})
               </button>
@@ -249,7 +249,7 @@ export default function AudioSidebar() {
       {!showSettings && (
         <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
           {feed.length === 0 && (
-            <div className="text-slate-400 dark:text-gray-600 text-sm italic px-1">
+            <div className="text-slate-500 dark:text-gray-400 text-sm italic px-1">
               {apiKeySet
                 ? 'Transcription and scribe messages will appear here'
                 : 'Set your Claude API key in Settings to enable the AI scribe'}
@@ -264,7 +264,7 @@ export default function AudioSidebar() {
               return (
                 <div key={t.id} className="bg-slate-50 dark:bg-gray-800 rounded p-2 space-y-1.5 border border-slate-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-400 dark:text-gray-500 font-mono">
+                    <span className="text-xs text-slate-500 dark:text-gray-400 font-mono">
                       {new Date(t.timestamp).toLocaleTimeString()} — {t.duration}s
                     </span>
                     {apiKeySet && (
@@ -315,7 +315,7 @@ export default function AudioSidebar() {
       {/* Speaker queue */}
       {queue.length > 0 && (
         <div className="px-2 py-2 border-t border-slate-200 dark:border-gray-700">
-          <div className="text-xs text-slate-400 dark:text-gray-600 mb-1.5 font-medium uppercase tracking-wide">
+          <div className="text-xs text-slate-600 dark:text-gray-400 mb-1.5 font-medium uppercase tracking-wide">
             Speaker Queue
           </div>
           <div className="space-y-1">
@@ -327,13 +327,13 @@ export default function AudioSidebar() {
                 <span className="text-slate-800 dark:text-gray-200 font-mono text-xs">
                   {entry.nick}
                   {entry.comment && (
-                    <span className="text-slate-400 dark:text-gray-500 ml-1.5 font-sans">— {entry.comment}</span>
+                    <span className="text-slate-500 dark:text-gray-400 ml-1.5 font-sans">— {entry.comment}</span>
                   )}
                 </span>
                 <button
                   onClick={() => removeFromQueue(entry.nick)}
                   aria-label={`Remove ${entry.nick} from queue`}
-                  className="text-xs text-slate-400 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 ml-2 transition-colors"
+                  className="text-xs text-slate-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 ml-2 transition-colors"
                 >
                   ✕
                 </button>

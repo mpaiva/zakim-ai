@@ -27,7 +27,7 @@ export default function MeetingActions() {
       className="flex items-center gap-1.5 px-3 py-1.5 border-t border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900"
       aria-label="Meeting actions"
     >
-      <span className="text-xs text-slate-400 dark:text-gray-600 font-medium uppercase tracking-wide mr-1">Meeting</span>
+      <span className="text-xs text-slate-600 dark:text-gray-400 font-medium uppercase tracking-wide mr-1">Meeting</span>
       <MeetingButton label="present+" cmd="present+" title="Mark yourself present" />
       <MeetingButton label="q+" cmd="q+" title="Add yourself to the speaker queue" />
       <MeetingButton label="q−" cmd="q-" title="Remove yourself from the speaker queue" />
