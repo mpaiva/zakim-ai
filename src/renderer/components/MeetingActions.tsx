@@ -30,7 +30,7 @@ export default function MeetingActions() {
       <span className="text-xs text-slate-600 dark:text-gray-400 font-medium uppercase tracking-wide mr-1">Meeting</span>
       <MeetingButton label="present+" cmd="present+" title="Mark yourself present" />
       <MeetingButton label="q+" cmd="q+" title="Add yourself to the speaker queue" />
-      <MeetingButton label="q−" cmd="q-" title="Remove yourself from the speaker queue" />
+      <MeetingButton label="q-" cmd="q-" title="Remove yourself from the speaker queue" />
       <MeetingButton label="ack" cmd="ack" title="Acknowledge the current speaker" />
       <MeetingButton label="Generate Minutes" cmd="rrsagent, generate minutes" title="Ask RRSAgent to generate meeting minutes" />
     </div>

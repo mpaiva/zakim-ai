@@ -14,6 +14,7 @@ const SIDEBAR_MAX = 640
 
 export default function App() {
   const [sidebarWidth, setSidebarWidth] = useState(320)
+  const [statusExpanded, setStatusExpanded] = useState(false)
   const dragging = useRef(false)
 
   // Theme toggle — dark by default
@@ -95,7 +96,7 @@ export default function App() {
 
       {/* Main content: three-panel layout */}
       <div
-        className="flex flex-1 min-h-0"
+        className="flex flex-1 min-h-0 bg-white dark:bg-gray-900"
         onPointerMove={onDragMove}
         onPointerUp={onDragEnd}
       >
@@ -126,48 +127,61 @@ export default function App() {
       <MeetingActions />
 
       {/* Status bar */}
-      <div className="flex items-center gap-3 px-3 py-1.5 text-xs bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700 text-slate-600 dark:text-gray-400">
-        <StatusDot color={
-          ircStatus === 'connected' ? 'bg-green-500' :
-          ircStatus === 'connecting' ? 'bg-yellow-500' :
-          ircStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
-        } />
-        <span className="font-mono">IRC: {ircStatus}</span>
+      <div
+        role="status"
+        aria-label="Application status"
+        className="flex items-center gap-2 px-3 py-1 text-xs bg-white dark:bg-gray-900 border-t border-slate-200 dark:border-gray-700"
+      >
+        <button
+          onClick={() => setStatusExpanded((v) => !v)}
+          aria-expanded={statusExpanded}
+          aria-label="Toggle status details"
+          className="text-slate-400 dark:text-gray-600 hover:text-slate-600 dark:hover:text-gray-400 transition-colors shrink-0 text-[10px] leading-none"
+        >
+          {statusExpanded ? '▾' : '▸'}
+        </button>
 
-        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
+        {/* Always-visible dots */}
+        <div className="flex items-center gap-1" aria-hidden="true">
+          <StatusDot color={
+            ircStatus === 'connected' ? 'bg-green-500' :
+            ircStatus === 'connecting' ? 'bg-yellow-500' :
+            ircStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
+          } />
+          <StatusDot color={
+            audioStatus === 'capturing' ? 'bg-green-500' :
+            audioStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
+          } />
+          <StatusDot color={
+            whisperStatus === 'ready' ? 'bg-green-500' :
+            whisperStatus === 'loading' ? 'bg-yellow-500' :
+            whisperStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
+          } />
+          <StatusDot color={scribeMode === 'auto' ? 'bg-amber-500' : 'bg-blue-500'} />
+          <StatusDot color={
+            scribeProcessing ? 'bg-purple-500' :
+            transcribing ? 'bg-yellow-500' :
+            apiKeySet ? 'bg-green-500' : 'bg-slate-400 dark:bg-gray-600'
+          } />
+        </div>
 
-        <StatusDot color={
-          audioStatus === 'capturing' ? 'bg-green-500' :
-          audioStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
-        } />
-        <span className="font-mono">Audio: {audioStatus}</span>
+        {/* Expanded labels */}
+        {statusExpanded && (
+          <div className="flex items-center gap-2 text-slate-600 dark:text-gray-400 font-mono">
+            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
+            <span>IRC: {ircStatus}</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
+            <span>Audio: {audioStatus}</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
+            <span>Whisper: {whisperStatus}</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
+            <span>Scribe: {scribeMode}</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-gray-700">·</span>
+            <span>Claude: {scribeProcessing ? 'processing' : transcribing ? 'transcribing' : apiKeySet ? 'ready' : 'no key'}</span>
+          </div>
+        )}
 
-        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
-
-        <StatusDot color={
-          whisperStatus === 'ready' ? 'bg-green-500' :
-          whisperStatus === 'loading' ? 'bg-yellow-500' :
-          whisperStatus === 'error' ? 'bg-red-500' : 'bg-slate-400 dark:bg-gray-600'
-        } />
-        <span className="font-mono">Whisper: {whisperStatus}</span>
-
-        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
-
-        <StatusDot color={scribeMode === 'auto' ? 'bg-amber-500' : 'bg-blue-500'} />
-        <span className="font-mono">Scribe: {scribeMode}</span>
-
-        <span className="text-slate-300 dark:text-gray-700" aria-hidden="true">·</span>
-
-        <StatusDot color={
-          scribeProcessing ? 'bg-purple-500' :
-          transcribing ? 'bg-yellow-500' :
-          apiKeySet ? 'bg-green-500' : 'bg-slate-400 dark:bg-gray-600'
-        } />
-        <span className="font-mono">
-          Claude: {scribeProcessing ? 'processing' : transcribing ? 'transcribing' : apiKeySet ? 'ready' : 'no key'}
-        </span>
-
-        <span className="ml-auto text-slate-500 dark:text-gray-400">Zakim AI v0.1.0</span>
+        <span className="ml-auto text-slate-500 dark:text-gray-400 font-mono">Zakim AI v0.1.0</span>
       </div>
     </div>
   )

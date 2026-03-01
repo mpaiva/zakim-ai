@@ -37,6 +37,7 @@ export default function ConnectionPanel({
   }[status]
 
   const inputCls = 'px-2 py-1 text-sm font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-600 disabled:opacity-50 transition-colors'
+  const groupCls = 'flex items-center gap-1.5 bg-slate-100 dark:bg-gray-800 rounded-lg px-2 py-1'
 
   return (
     <div className="flex flex-wrap items-center gap-2 px-3 py-2 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
@@ -48,90 +49,96 @@ export default function ConnectionPanel({
         aria-label={`IRC status: ${status}`}
       />
 
-      {/* Server */}
-      <input
-        type="text"
-        value={host}
-        onChange={(e) => setHost(e.target.value)}
-        disabled={connected || connecting}
-        placeholder="Host"
-        aria-label="IRC server hostname"
-        className={`w-36 ${inputCls}`}
-      />
-
-      {/* Port */}
-      <input
-        type="number"
-        value={port}
-        onChange={(e) => setPort(Number(e.target.value))}
-        disabled={connected || connecting}
-        aria-label="IRC server port"
-        className={`w-16 ${inputCls}`}
-      />
-
-      {/* TLS */}
-      <label className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-gray-400 cursor-pointer select-none">
+      {/* Server group: host, port, TLS, nick, connect */}
+      <div role="group" aria-label="Server settings" className={groupCls}>
         <input
-          type="checkbox"
-          checked={tls}
-          onChange={(e) => {
-            setTls(e.target.checked)
-            if (e.target.checked && port === 6667) setPort(6697)
-            if (!e.target.checked && port === 6697) setPort(6667)
-          }}
+          type="text"
+          value={host}
+          onChange={(e) => setHost(e.target.value)}
           disabled={connected || connecting}
-          className="accent-amber-500"
-          aria-label="Use TLS encryption"
+          placeholder="Host"
+          aria-label="IRC server hostname"
+          className={`w-32 ${inputCls}`}
         />
-        TLS
-      </label>
 
-      {/* Nickname */}
-      <input
-        type="text"
-        value={nick}
-        onChange={(e) => setNick(e.target.value)}
-        disabled={connected || connecting}
-        placeholder="Nickname"
-        aria-label="IRC nickname"
-        className={`w-28 ${inputCls}`}
-      />
+        <input
+          type="number"
+          value={port}
+          onChange={(e) => setPort(Number(e.target.value))}
+          disabled={connected || connecting}
+          aria-label="IRC server port"
+          className={`w-14 ${inputCls}`}
+        />
 
-      {/* Connect button */}
-      <button
-        onClick={handleConnect}
-        disabled={connecting}
-        aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC'}
-        className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
-          connected
-            ? 'bg-red-600 hover:bg-red-700 text-white'
-            : 'bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold'
-        }`}
-      >
-        {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
-      </button>
+        {/* Custom TLS toggle */}
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={tls}
+            onClick={() => {
+              const next = !tls
+              setTls(next)
+              if (next && port === 6667) setPort(6697)
+              if (!next && port === 6697) setPort(6667)
+            }}
+            disabled={connected || connecting}
+            aria-label="TLS encryption"
+            className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber-500 ${
+              tls ? 'bg-amber-500' : 'bg-slate-300 dark:bg-gray-600'
+            }`}
+          >
+            <span className={`absolute inline-block h-3 w-3 rounded-full bg-white shadow transition-transform ${
+              tls ? 'translate-x-3.5' : 'translate-x-0.5'
+            }`} />
+          </button>
+          <span className="text-xs text-slate-600 dark:text-gray-400 select-none">TLS</span>
+        </div>
 
-      {/* Divider */}
-      <div className="w-px h-5 bg-slate-200 dark:bg-gray-700 mx-0.5" />
+        <input
+          type="text"
+          value={nick}
+          onChange={(e) => setNick(e.target.value)}
+          disabled={connected || connecting}
+          placeholder="Nickname"
+          aria-label="IRC nickname"
+          className={`w-24 ${inputCls}`}
+        />
 
-      {/* Channel */}
-      <input
-        type="text"
-        value={channel}
-        onChange={(e) => setChannel(e.target.value)}
-        placeholder="#channel"
-        aria-label="IRC channel to join"
-        className={`w-24 ${inputCls}`}
-        disabled={!connected}
-      />
-      <button
-        onClick={handleJoin}
-        disabled={!connected || !channel}
-        aria-label="Join IRC channel"
-        className="px-3 py-1 text-sm rounded font-medium bg-green-700 hover:bg-green-800 text-white disabled:opacity-50 transition-colors"
-      >
-        Join
-      </button>
+        <button
+          onClick={handleConnect}
+          disabled={connecting}
+          aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC'}
+          className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
+            connected
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold'
+          }`}
+        >
+          {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
+        </button>
+      </div>
+
+      {/* Channel group */}
+      <div role="group" aria-label="Channel" className={groupCls}>
+        <input
+          type="text"
+          value={channel}
+          onChange={(e) => setChannel(e.target.value)}
+          placeholder="#channel"
+          aria-label="IRC channel to join"
+          className={`w-24 ${inputCls}`}
+          disabled={!connected}
+        />
+        <button
+          onClick={handleJoin}
+          disabled={!connected || !channel}
+          aria-label="Join IRC channel"
+          className="px-3 py-1 text-sm rounded font-medium bg-green-700 hover:bg-green-800 text-white disabled:opacity-50 transition-colors"
+        >
+          Join
+        </button>
+      </div>
 
       {/* Theme toggle */}
       <button

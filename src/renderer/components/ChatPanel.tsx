@@ -31,7 +31,7 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
   if (msg.type === 'system') {
     return (
       <div className="text-xs text-slate-500 dark:text-gray-400 py-0.5 italic leading-relaxed">
-        <span className="text-slate-300 dark:text-gray-700 tabular-nums not-italic">{time}</span>
+        <span className="text-slate-500 dark:text-gray-400 tabular-nums not-italic">{time}</span>
         {' '}
         {msg.text}
       </div>
@@ -41,7 +41,7 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
   if (msg.type === 'action') {
     return (
       <div className="text-sm py-0.5 leading-relaxed">
-        <span className="text-slate-300 dark:text-gray-700 text-xs tabular-nums">{time}</span>
+        <span className="text-slate-500 dark:text-gray-400 text-xs tabular-nums">{time}</span>
         {' '}
         <span className="text-purple-600 dark:text-purple-400 italic">* {msg.nick} {msg.text}</span>
       </div>
@@ -145,7 +145,7 @@ export default function ChatPanel() {
           type="submit"
           disabled={status !== 'connected' || !input.trim()}
           aria-label="Send message"
-          className="px-4 py-2 text-sm font-semibold bg-amber-500 hover:bg-amber-600 text-gray-900 disabled:opacity-40 transition-colors"
+          className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 transition-colors"
         >
           Send
         </button>
