@@ -1,59 +1,16 @@
-import { Fragment, useRef, useState } from 'react'
+import { Fragment, useState } from 'react'
+
 import { useAudioStore } from '../stores/audioStore'
 import { useScribeStore } from '../stores/scribeStore'
 import { useIrcStore } from '../stores/ircStore'
 import { loadWhisperModel } from '../audioCapture'
+import TlsInfoPopover from './TlsInfoPopover'
+import { W3C_CHANNELS } from '../data/w3cChannels'
 
 interface Props {
   onComplete: () => void
 }
 
-const W3C_CHANNELS: { channel: string; label: string }[] = [
-  { channel: '#ag',                 label: 'Accessibility Guidelines (WCAG) Working Group' },
-  { channel: '#apa',                label: 'Accessible Platform Architectures Working Group' },
-  { channel: '#aria',               label: 'ARIA Working Group' },
-  { channel: '#audio',              label: 'Audio Working Group' },
-  { channel: '#css',                label: 'CSS Working Group' },
-  { channel: '#dap',                label: 'Devices and Sensors Working Group' },
-  { channel: '#did',                label: 'Decentralized Identifier Working Group' },
-  { channel: '#dxwg',               label: 'Dataset Exchange Working Group' },
-  { channel: '#editing',            label: 'Web Editing Working Group' },
-  { channel: '#fedid',              label: 'Federated Identity Working Group' },
-  { channel: '#i18n',               label: 'Internationalization Working Group' },
-  { channel: '#immersive-web',      label: 'Immersive Web Working Group' },
-  { channel: '#json-ld',            label: 'JSON-LD Working Group' },
-  { channel: '#lws',                label: 'Linked Web Storage Working Group' },
-  { channel: '#math',               label: 'Math Working Group' },
-  { channel: '#mediawg',            label: 'Media Working Group' },
-  { channel: '#miniapp',            label: 'MiniApps Working Group' },
-  { channel: '#patcg',              label: 'Private Advertising Technology Community Group' },
-  { channel: '#pointerevents',      label: 'Pointer Events Working Group' },
-  { channel: '#pwg',                label: 'Publishing Maintenance Working Group' },
-  { channel: '#rch',                label: 'RDF Dataset Canonicalization and Hash Working Group' },
-  { channel: '#rdf-star',           label: 'RDF-star Working Group' },
-  { channel: '#rqtf',               label: 'Research Questions Task Force (Accessibility)' },
-  { channel: '#sdw',                label: 'Spatial Data on the Web Working Group' },
-  { channel: '#social',             label: 'Social Web Working Group' },
-  { channel: '#svg',                label: 'SVG Working Group' },
-  { channel: '#testing',            label: 'Browser Testing and Tools Working Group' },
-  { channel: '#tt',                 label: 'Timed Text Working Group' },
-  { channel: '#vcwg',               label: 'Verifiable Credentials Working Group' },
-  { channel: '#w3c',                label: 'W3C General' },
-  { channel: '#wcag-act',           label: 'WCAG Accessibility Conformance Testing Task Force' },
-  { channel: '#webapps',            label: 'Web Applications Working Group' },
-  { channel: '#webappsec',          label: 'Web Application Security Working Group' },
-  { channel: '#webauthn',           label: 'Web Authentication Working Group' },
-  { channel: '#webfonts',           label: 'Web Fonts Working Group' },
-  { channel: '#webgpu',             label: 'GPU for the Web Working Group' },
-  { channel: '#webmachinelearning', label: 'Web Machine Learning Working Group' },
-  { channel: '#webmob',             label: 'Web Mobile Interest Group' },
-  { channel: '#webperf',            label: 'Web Performance Working Group' },
-  { channel: '#webrtc',             label: 'Web Real-Time Communications Working Group' },
-  { channel: '#webscreens',         label: 'Second Screen Working Group' },
-  { channel: '#webtransport',       label: 'WebTransport Working Group' },
-  { channel: '#wot',                label: 'Web of Things Working Group' },
-  { channel: '#wpwg',               label: 'Web Payments Working Group' },
-]
 
 type WizardStep = 0 | 1 | 2 | 3 | 4 | 5
 
@@ -100,37 +57,6 @@ function ProgressBar({ step }: { step: number }) {
   )
 }
 
-function TlsInfo() {
-  const [open, setOpen] = useState(false)
-  const btnRef = useRef<HTMLButtonElement>(null)
-
-  return (
-    <div className="relative">
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        onBlur={() => setOpen(false)}
-        aria-label="What is TLS?"
-        className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400 hover:bg-slate-300 dark:hover:bg-gray-600 transition-colors leading-none"
-      >
-        ?
-      </button>
-      {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-6 w-56 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg px-3 py-2.5 shadow-xl z-10 pointer-events-none">
-          <p className="font-semibold mb-1">Transport Layer Security</p>
-          <p className="text-gray-300 leading-relaxed">
-            Encrypts the connection to the IRC server so messages aren't sent in plaintext. Uses port{' '}
-            <span className="font-mono text-amber-400">6697</span> instead of{' '}
-            <span className="font-mono text-amber-400">6667</span>.
-          </p>
-          {/* Arrow */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-900 dark:border-t-gray-800" />
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function OnboardingWizard({ onComplete }: Props) {
   const [step, setStep] = useState<WizardStep>(0)
@@ -588,7 +514,7 @@ export default function OnboardingWizard({ onComplete }: Props) {
               />
             </button>
             <span className="text-xs text-slate-600 dark:text-gray-400">TLS</span>
-            <TlsInfo />
+            <TlsInfoPopover />
           </div>
         </div>
         {/* Live status */}

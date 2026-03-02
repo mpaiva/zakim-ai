@@ -1,4 +1,6 @@
 import { useIrcStore } from '../stores/ircStore'
+import TlsInfoPopover from './TlsInfoPopover'
+import { W3C_CHANNELS } from '../data/w3cChannels'
 
 export default function ConnectionPanel({
   isDark,
@@ -93,6 +95,7 @@ export default function ConnectionPanel({
             }`} />
           </button>
           <span className="text-xs text-slate-600 dark:text-gray-400 select-none">TLS</span>
+          <TlsInfoPopover />
         </div>
 
         <input
@@ -130,9 +133,15 @@ export default function ConnectionPanel({
           }}
           placeholder="#channel"
           aria-label="IRC channel to join"
+          list="w3c-channels-bar"
           className={`w-24 ${inputCls}`}
           disabled={!connected}
         />
+        <datalist id="w3c-channels-bar">
+          {W3C_CHANNELS.map(({ channel: ch, label }) => (
+            <option key={ch} value={ch}>{label}</option>
+          ))}
+        </datalist>
         <button
           onClick={handleJoin}
           disabled={!connected || !channel}
