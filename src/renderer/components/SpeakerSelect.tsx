@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useIrcStore } from '../stores/ircStore'
+import { useAudioStore } from '../stores/audioStore'
 
 interface SpeakerSelectProps {
   value: string | null
@@ -11,6 +12,8 @@ const baseCls = 'px-1 py-0.5 text-xs font-mono bg-white dark:bg-gray-900 border 
 
 export default function SpeakerSelect({ value, onChange, className = 'w-24' }: SpeakerSelectProps) {
   const users = useIrcStore((s) => s.users)
+  const customSpeakers = useAudioStore((s) => s.customSpeakers)
+  const addCustomSpeaker = useAudioStore((s) => s.addCustomSpeaker)
   const [customMode, setCustomMode] = useState(false)
   const [customName, setCustomName] = useState('')
 
@@ -22,6 +25,7 @@ export default function SpeakerSelect({ value, onChange, className = 'w-24' }: S
         onChange={(e) => setCustomName(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && customName.trim()) {
+            addCustomSpeaker(customName.trim())
             onChange(customName.trim())
             setCustomMode(false)
             setCustomName('')
@@ -33,6 +37,7 @@ export default function SpeakerSelect({ value, onChange, className = 'w-24' }: S
         }}
         onBlur={() => {
           if (customName.trim()) {
+            addCustomSpeaker(customName.trim())
             onChange(customName.trim())
           }
           setCustomMode(false)
@@ -46,7 +51,9 @@ export default function SpeakerSelect({ value, onChange, className = 'w-24' }: S
     )
   }
 
-  const isCustomValue = value && !users.some((u) => u.nick === value)
+  const ircNicks = new Set(users.map((u) => u.nick))
+  const savedSpeakers = customSpeakers.filter((n) => !ircNicks.has(n))
+  const isCustomValue = value && !ircNicks.has(value) && !customSpeakers.includes(value)
 
   return (
     <select
@@ -70,6 +77,14 @@ export default function SpeakerSelect({ value, onChange, className = 'w-24' }: S
           {u.nick}
         </option>
       ))}
+      {savedSpeakers.length > 0 && (
+        <>
+          {users.length > 0 && <option disabled>──</option>}
+          {savedSpeakers.map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </>
+      )}
       <option value="__other__">Other…</option>
     </select>
   )

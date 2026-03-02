@@ -17,6 +17,7 @@ interface AudioState {
   captureError: string | null
   systemAudioAvailable: boolean
   stickySpeaker: string | null
+  customSpeakers: string[]
 
   setStatus: (status: AudioCaptureStatus) => void
   setSources: (sources: AudioSource[]) => void
@@ -34,6 +35,7 @@ interface AudioState {
   setSystemAudioAvailable: (v: boolean) => void
   clearTranscriptions: () => void
   setStickySpeaker: (name: string | null) => void
+  addCustomSpeaker: (nick: string) => void
   assignSpeaker: (transcriptionId: string, segmentId: string, speaker: string) => void
 }
 
@@ -53,6 +55,7 @@ export const useAudioStore = create<AudioState>((set) => ({
   captureError: null,
   systemAudioAvailable: false,
   stickySpeaker: null,
+  customSpeakers: JSON.parse(localStorage.getItem('zakim_custom_speakers') || '[]') as string[],
 
   setStatus: (status) => set({ status }),
   setSources: (sources) => set({ sources }),
@@ -71,6 +74,12 @@ export const useAudioStore = create<AudioState>((set) => ({
   setSystemAudioAvailable: (v) => set({ systemAudioAvailable: v }),
   clearTranscriptions: () => set({ transcriptions: [] }),
   setStickySpeaker: (name) => set({ stickySpeaker: name }),
+  addCustomSpeaker: (nick) => set((state) => {
+    if (state.customSpeakers.includes(nick)) return state
+    const updated = [...state.customSpeakers, nick]
+    localStorage.setItem('zakim_custom_speakers', JSON.stringify(updated))
+    return { customSpeakers: updated }
+  }),
   assignSpeaker: (transcriptionId, segmentId, speaker) =>
     set((state) => {
       const sticky = state.stickySpeaker
