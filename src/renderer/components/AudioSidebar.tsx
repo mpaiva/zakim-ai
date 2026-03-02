@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useAudioStore } from '../stores/audioStore'
 import { useScribeStore } from '../stores/scribeStore'
 import { useIrcStore } from '../stores/ircStore'
@@ -179,7 +179,8 @@ export default function AudioSidebar() {
   // IRC store
   const { channel, status: ircStatus } = useIrcStore()
 
-  const [processingId, setProcessingId] = useState<string | null>(null)
+  const autoQueuedIds = useRef<Set<string>>(new Set())
+  const [processingIds, setProcessingIds] = useState<Set<string>>(() => new Set())
   const [processedIds, setProcessedIds] = useState<Set<string>>(() => new Set())
   const [error, setError] = useState<string | null>(null)
 
@@ -197,43 +198,50 @@ export default function AudioSidebar() {
     ...messages.map((m) => ({ kind: 'scribe' as const, data: m, sortTime: m.timestamp })),
   ].sort((a, b) => a.sortTime - b.sortTime), [transcriptions, messages])
 
-  // Process transcription with speaker attribution
-  async function processSpeakers(transcriptionId: string) {
-    const t = useAudioStore.getState().transcriptions.find((tr) => tr.id === transcriptionId)
-    if (!t) return
+  // Process a transcription — uses speaker attribution if available, falls back to raw text
+  async function processTranscription(t: TranscriptionResult) {
+    const rawText = t.segments.map((s) => s.text).join(' ').trim()
+    if (!rawText) return
+
     const speakerTexts = t.segments
       .filter((s) => s.speaker !== null)
       .map((s) => ({ speaker: s.speaker!, text: s.text }))
-    if (speakerTexts.length === 0) return
 
-    setProcessingId(transcriptionId)
+    setProcessingIds((prev) => new Set([...prev, t.id]))
     setError(null)
     setProcessing(true)
     try {
       let msgs
-      if (typeof window.api.scribe.processSpeakers === 'function') {
+      if (speakerTexts.length > 0 && typeof window.api.scribe.processSpeakers === 'function') {
         msgs = await window.api.scribe.processSpeakers(speakerTexts)
       } else {
-        const text = speakerTexts.map((s) => `${s.speaker}: ${s.text}`).join('\n')
-        msgs = await window.api.scribe.process(text)
+        msgs = await window.api.scribe.process(rawText)
       }
       addMessages(msgs)
-      setProcessedIds((prev) => new Set([...prev, transcriptionId]))
-    } catch (err) {
-      console.error('[AudioSidebar] processSpeakers failed:', err)
+      setProcessedIds((prev) => new Set([...prev, t.id]))
+    } catch {
       try {
-        const text = speakerTexts.map((s) => `${s.speaker}: ${s.text}`).join('\n')
-        const msgs = await window.api.scribe.process(text)
+        const msgs = await window.api.scribe.process(rawText)
         addMessages(msgs)
-        setProcessedIds((prev) => new Set([...prev, transcriptionId]))
+        setProcessedIds((prev) => new Set([...prev, t.id]))
       } catch (err2) {
         setError((err2 as Error).message || 'Processing failed')
       }
     } finally {
+      setProcessingIds((prev) => { const n = new Set(prev); n.delete(t.id); return n })
       setProcessing(false)
-      setProcessingId(null)
     }
   }
+
+  // Auto-process new transcriptions as they arrive
+  useEffect(() => {
+    if (!apiKeySet) return
+    for (const t of transcriptions) {
+      if (autoQueuedIds.current.has(t.id)) continue
+      autoQueuedIds.current.add(t.id)
+      void processTranscription(t)
+    }
+  }, [transcriptions, apiKeySet])
 
   async function sendToIrc(msg: ScribeMessage) {
     if (ircStatus !== 'connected' || !channel) return
@@ -417,38 +425,44 @@ export default function AudioSidebar() {
             if (item.kind === 'transcription') {
               const t = item.data
               if (processedIds.has(t.id)) return null
-              const allAssigned = t.segments.length > 0 && t.segments.every((s) => s.speaker !== null)
-              const isProcessing = processingId === t.id
+              const isProcessing = processingIds.has(t.id)
               return (
                 <div key={t.id} className="bg-slate-50 dark:bg-gray-800 rounded p-2 space-y-1.5 border border-slate-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 dark:text-gray-400 font-mono">
-                      {new Date(t.timestamp).toLocaleTimeString()} — {t.duration}s
-                    </span>
-                    {apiKeySet && (
-                      <button
-                        onClick={() => processSpeakers(t.id)}
-                        disabled={!allAssigned || isProcessing}
-                        title={allAssigned ? 'Process with speaker attribution' : 'Assign all speakers first'}
-                        aria-label={allAssigned ? 'Process transcription with speaker attribution' : 'Assign all speakers before processing'}
-                        className={`${btnXs} bg-purple-600 hover:bg-purple-700 text-white`}
-                      >
-                        {isProcessing ? 'Processing…' : 'Process'}
-                      </button>
-                    )}
-                  </div>
-
-                  {t.segments.map((seg) => (
-                    <div key={seg.id} className="flex items-start gap-1.5">
-                      <SpeakerSelect
-                        value={seg.speaker}
-                        onChange={(speaker) => assignSpeaker(t.id, seg.id, speaker)}
-                      />
-                      <span className="text-xs text-slate-700 dark:text-gray-300 flex-1 leading-relaxed font-mono">
-                        {seg.text}
-                      </span>
+                  {isProcessing ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-gray-500">
+                      <span className="animate-pulse text-purple-500">●</span>
+                      <span>Processing…</span>
+                      <span className="ml-auto font-mono">{new Date(t.timestamp).toLocaleTimeString()}</span>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-500 dark:text-gray-400 font-mono">
+                          {new Date(t.timestamp).toLocaleTimeString()} — {t.duration}s
+                        </span>
+                        {apiKeySet && (
+                          <button
+                            onClick={() => processTranscription(t)}
+                            aria-label="Retry processing this transcription"
+                            className={`${btnXs} bg-purple-600 hover:bg-purple-700 text-white`}
+                          >
+                            Retry
+                          </button>
+                        )}
+                      </div>
+                      {t.segments.map((seg) => (
+                        <div key={seg.id} className="flex items-start gap-1.5">
+                          <SpeakerSelect
+                            value={seg.speaker}
+                            onChange={(speaker) => assignSpeaker(t.id, seg.id, speaker)}
+                          />
+                          <span className="text-xs text-slate-700 dark:text-gray-300 flex-1 leading-relaxed font-mono">
+                            {seg.text}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )
             }
