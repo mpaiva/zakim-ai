@@ -1,8 +1,14 @@
-import { ipcMain, safeStorage } from 'electron'
+import { app, ipcMain, safeStorage } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
 import Anthropic from '@anthropic-ai/sdk'
 import { IPC, type ScribeMessage, type SpeakerAttributedText, type WhisperTimestampedResult } from '../shared/types'
 import { isAlive, initPipeline, diarize } from './sidecar'
 import { writeWav, alignSpeakers, cleanupWav } from './wavutil'
+
+function settingsPath(file: string): string {
+  return path.join(app.getPath('userData'), file)
+}
 
 let anthropic: Anthropic | null = null
 let rollingContext = ''
@@ -69,11 +75,33 @@ async function tryInitPipeline(hfToken: string): Promise<void> {
   }
 }
 
+function loadPersistedKeys(): void {
+  try {
+    const keyPath = settingsPath('apiKey.enc')
+    if (fs.existsSync(keyPath) && safeStorage.isEncryptionAvailable()) {
+      encryptedApiKey = fs.readFileSync(keyPath)
+      const key = safeStorage.decryptString(encryptedApiKey)
+      anthropic = new Anthropic({ apiKey: key })
+    }
+  } catch {}
+  try {
+    const tokenPath = settingsPath('hfToken.enc')
+    if (fs.existsSync(tokenPath) && safeStorage.isEncryptionAvailable()) {
+      encryptedHfToken = fs.readFileSync(tokenPath)
+      const token = safeStorage.decryptString(encryptedHfToken)
+      tryInitPipeline(token)
+    }
+  } catch {}
+}
+
 export function setupClaude() {
+  loadPersistedKeys()
+
   // ── API Key storage ──
   ipcMain.handle(IPC.SETTINGS_SET_API_KEY, async (_event, key: string) => {
     if (safeStorage.isEncryptionAvailable()) {
       encryptedApiKey = safeStorage.encryptString(key)
+      try { fs.writeFileSync(settingsPath('apiKey.enc'), encryptedApiKey) } catch {}
     }
     anthropic = new Anthropic({ apiKey: key })
   })
@@ -89,6 +117,7 @@ export function setupClaude() {
   ipcMain.handle(IPC.SETTINGS_SET_HF_TOKEN, async (_event, token: string) => {
     if (safeStorage.isEncryptionAvailable()) {
       encryptedHfToken = safeStorage.encryptString(token)
+      try { fs.writeFileSync(settingsPath('hfToken.enc'), encryptedHfToken) } catch {}
     }
     await tryInitPipeline(token)
   })

@@ -3,6 +3,7 @@ import ConnectionPanel from './components/ConnectionPanel'
 import ChatPanel from './components/ChatPanel'
 import AudioSidebar from './components/AudioSidebar'
 import MeetingActions from './components/MeetingActions'
+import OnboardingWizard from './components/OnboardingWizard'
 import { useIrcStore } from './stores/ircStore'
 import { useAudioStore } from './stores/audioStore'
 import { useScribeStore } from './stores/scribeStore'
@@ -15,6 +16,11 @@ const SIDEBAR_MAX = 640
 export default function App() {
   const [sidebarWidth, setSidebarWidth] = useState(320)
   const dragging = useRef(false)
+
+  // Onboarding wizard — shown until user completes or dismisses
+  const [showWizard, setShowWizard] = useState(
+    () => localStorage.getItem('zakim_setup_complete') !== '1'
+  )
 
   // Theme toggle — dark by default
   const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') !== 'light')
@@ -90,6 +96,14 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-100 font-sans antialiased select-none">
+      {showWizard && (
+        <OnboardingWizard
+          onComplete={() => {
+            localStorage.setItem('zakim_setup_complete', '1')
+            setShowWizard(false)
+          }}
+        />
+      )}
       {/* Connection bar */}
       <ConnectionPanel isDark={isDark} onToggleTheme={() => setIsDark((v) => !v)} />
 
