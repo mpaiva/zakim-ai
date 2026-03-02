@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAudioStore } from '../stores/audioStore'
 import { useScribeStore } from '../stores/scribeStore'
 import { useIrcStore } from '../stores/ircStore'
@@ -148,6 +148,9 @@ function ReadyChecklist({
   )
 }
 
+// Module-level — survives React StrictMode double-mount and component remounts
+const _autoQueuedIds = new Set<string>()
+
 type FeedItem =
   | { kind: 'transcription'; data: TranscriptionResult; sortTime: number }
   | { kind: 'scribe'; data: ScribeMessage; sortTime: number }
@@ -179,7 +182,6 @@ export default function AudioSidebar() {
   // IRC store
   const { channel, status: ircStatus } = useIrcStore()
 
-  const autoQueuedIds = useRef<Set<string>>(new Set())
   const [processingIds, setProcessingIds] = useState<Set<string>>(() => new Set())
   const [processedIds, setProcessedIds] = useState<Set<string>>(() => new Set())
   const [error, setError] = useState<string | null>(null)
@@ -240,8 +242,8 @@ export default function AudioSidebar() {
   useEffect(() => {
     if (!apiKeySet) return
     for (const t of transcriptions) {
-      if (autoQueuedIds.current.has(t.id)) continue
-      autoQueuedIds.current.add(t.id)
+      if (_autoQueuedIds.has(t.id)) continue
+      _autoQueuedIds.add(t.id)
       void processTranscription(t)
     }
   }, [transcriptions, apiKeySet])

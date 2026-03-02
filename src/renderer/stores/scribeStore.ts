@@ -42,7 +42,12 @@ export const useScribeStore = create<ScribeState>((set) => ({
   setHfTokenSet: (v) => set({ hfTokenSet: v }),
 
   addMessages: (msgs) =>
-    set((state) => ({ messages: [...state.messages, ...msgs] })),
+    set((state) => {
+      const existingTexts = new Set(state.messages.map((m) => m.text))
+      const deduped = msgs.filter((m) => !existingTexts.has(m.text))
+      if (deduped.length === 0) return state
+      return { messages: [...state.messages, ...deduped] }
+    }),
 
   updateMessage: (id, updates) =>
     set((state) => ({
