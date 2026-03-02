@@ -51,7 +51,7 @@ export default function ConnectionPanel({
         aria-label={`IRC status: ${status}`}
       />
 
-      {/* Server group: host, port, TLS, nick, connect */}
+      {/* Server group: host, port, TLS, nick */}
       <div role="group" aria-label="Server settings" className={groupCls}>
         <input
           type="text"
@@ -107,22 +107,9 @@ export default function ConnectionPanel({
           aria-label="IRC nickname"
           className={`w-24 ${inputCls}`}
         />
-
-        <button
-          onClick={handleConnect}
-          disabled={connecting}
-          aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC'}
-          className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
-            connected
-              ? 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold'
-          }`}
-        >
-          {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
-        </button>
       </div>
 
-      {/* Channel group */}
+      {/* Channel group: channel, connect, join */}
       <div role="group" aria-label="Channel" className={groupCls}>
         <input
           type="text"
@@ -135,13 +122,24 @@ export default function ConnectionPanel({
           aria-label="IRC channel to join"
           list="w3c-channels-bar"
           className={`w-24 ${inputCls}`}
-          disabled={!connected}
         />
         <datalist id="w3c-channels-bar">
           {W3C_CHANNELS.map(({ channel: ch, label }) => (
             <option key={ch} value={ch}>{label}</option>
           ))}
         </datalist>
+        <button
+          onClick={handleConnect}
+          disabled={connecting}
+          aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC'}
+          className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
+            connected
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold'
+          }`}
+        >
+          {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
+        </button>
         <button
           onClick={handleJoin}
           disabled={!connected || !channel}
