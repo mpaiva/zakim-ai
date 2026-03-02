@@ -95,7 +95,7 @@ export default function ConnectionPanel({
             }`} />
           </button>
           <span className="text-xs text-slate-600 dark:text-gray-400 select-none">TLS</span>
-          <TlsInfoPopover />
+          <TlsInfoPopover placement="bottom" />
         </div>
 
         <input
