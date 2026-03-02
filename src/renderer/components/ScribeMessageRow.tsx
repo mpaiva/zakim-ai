@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ScribeMessage } from '../../shared/types'
+import { useIrcStore } from '../stores/ircStore'
 
 export default function ScribeMessageRow({
   msg,
@@ -18,6 +19,7 @@ export default function ScribeMessageRow({
 }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(msg.editedText || msg.text)
+  const setHighlightedIrcText = useIrcStore((s) => s.setHighlightedIrcText)
 
   const typeAccent = {
     statement: 'border-l-blue-500',
@@ -44,10 +46,18 @@ export default function ScribeMessageRow({
   })
 
   if (msg.status === 'sent') {
+    const sentText = msg.editedText || msg.text
     return (
-      <div className={`border-l-2 ${typeAccent} flex items-baseline gap-2 px-2 py-1`}>
+      <div
+        className={`border-l-2 ${typeAccent} flex items-baseline gap-2 px-2 py-1 rounded-r cursor-default transition-colors hover:bg-amber-50 dark:hover:bg-amber-900/20 focus-visible:outline-none focus-visible:bg-amber-50 dark:focus-visible:bg-amber-900/20`}
+        tabIndex={0}
+        onMouseEnter={() => setHighlightedIrcText(sentText)}
+        onMouseLeave={() => setHighlightedIrcText(null)}
+        onFocus={() => setHighlightedIrcText(sentText)}
+        onBlur={() => setHighlightedIrcText(null)}
+      >
         <span className="text-[10px] font-mono text-slate-400 dark:text-gray-500 shrink-0 tabular-nums">{time}</span>
-        <span className="text-xs text-slate-500 dark:text-gray-400 truncate">{msg.editedText || msg.text}</span>
+        <span className="text-xs text-slate-500 dark:text-gray-400 truncate">{sentText}</span>
       </div>
     )
   }

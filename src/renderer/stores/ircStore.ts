@@ -12,6 +12,8 @@ interface IrcState {
   users: IrcChannelUser[]
   topic: string
 
+  highlightedIrcText: string | null
+
   setNick: (nick: string) => void
   setChannel: (channel: string) => void
   setHost: (host: string) => void
@@ -22,6 +24,7 @@ interface IrcState {
   setUsers: (users: IrcChannelUser[]) => void
   setTopic: (topic: string) => void
   clearMessages: () => void
+  setHighlightedIrcText: (text: string | null) => void
 }
 
 export const useIrcStore = create<IrcState>((set) => ({
@@ -34,6 +37,7 @@ export const useIrcStore = create<IrcState>((set) => ({
   messages: [],
   users: [],
   topic: '',
+  highlightedIrcText: null,
 
   setNick: (nick) => set({ nick }),
   setChannel: (channel) => set({ channel }),
@@ -46,4 +50,5 @@ export const useIrcStore = create<IrcState>((set) => ({
   setUsers: (users) => set({ users }),
   setTopic: (topic) => set({ topic }),
   clearMessages: () => set({ messages: [] }),
+  setHighlightedIrcText: (text) => set({ highlightedIrcText: text }),
 }))

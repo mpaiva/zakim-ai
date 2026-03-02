@@ -3,12 +3,23 @@ import { useIrcStore } from '../stores/ircStore'
 import type { IrcMessage } from '../../shared/types'
 
 function MessageLine({ msg }: { msg: IrcMessage }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const highlighted = useIrcStore((s) => s.highlightedIrcText !== null && s.highlightedIrcText === msg.text)
+
+  useEffect(() => {
+    if (highlighted) {
+      ref.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [highlighted])
+
   const time = new Date(msg.timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
   })
+
+  const highlightCls = highlighted ? 'bg-amber-50 dark:bg-amber-900/20 rounded' : ''
 
   const isBot = ['Zakim', 'RRSAgent', 'trackbot'].includes(msg.nick)
 
@@ -20,7 +31,7 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
 
   if (msg.type === 'join' || msg.type === 'part' || msg.type === 'quit') {
     return (
-      <div className="text-xs text-slate-500 dark:text-gray-400 py-0.5 leading-relaxed">
+      <div ref={ref} className={`text-xs text-slate-500 dark:text-gray-400 py-0.5 leading-relaxed ${highlightCls}`}>
         <span className="text-slate-500 dark:text-gray-400 tabular-nums">{time}</span>
         {' — '}
         {msg.text}
@@ -30,7 +41,7 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
 
   if (msg.type === 'system') {
     return (
-      <div className="text-xs text-slate-500 dark:text-gray-400 py-0.5 italic leading-relaxed">
+      <div ref={ref} className={`text-xs text-slate-500 dark:text-gray-400 py-0.5 italic leading-relaxed ${highlightCls}`}>
         <span className="text-slate-500 dark:text-gray-400 tabular-nums not-italic">{time}</span>
         {' '}
         {msg.text}
@@ -40,7 +51,7 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
 
   if (msg.type === 'action') {
     return (
-      <div className="text-sm py-0.5 leading-relaxed">
+      <div ref={ref} className={`text-sm py-0.5 leading-relaxed ${highlightCls}`}>
         <span className="text-slate-500 dark:text-gray-400 text-xs tabular-nums">{time}</span>
         {' '}
         <span className="text-purple-600 dark:text-purple-400 italic">* {msg.nick} {msg.text}</span>
@@ -49,7 +60,7 @@ function MessageLine({ msg }: { msg: IrcMessage }) {
   }
 
   return (
-    <div className="text-sm py-0.5 leading-relaxed">
+    <div ref={ref} className={`text-sm py-0.5 leading-relaxed ${highlightCls}`}>
       <span className="text-slate-300 dark:text-gray-700 text-xs tabular-nums">{time}</span>
       {' '}
       <span className={`font-medium ${nickColor}`}>&lt;{msg.nick}&gt;</span>
