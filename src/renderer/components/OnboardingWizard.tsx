@@ -548,7 +548,10 @@ export default function OnboardingWizard({ onComplete }: Props) {
               <input
                 type="text"
                 value={ircChannelInput}
-                onChange={(e) => setIrcChannelInput(e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setIrcChannelInput(v && !v.startsWith('#') ? '#' + v : v)
+                }}
                 disabled={isConnected || ircConnecting}
                 placeholder="#apa"
                 list="w3c-channels"

@@ -124,7 +124,10 @@ export default function ConnectionPanel({
         <input
           type="text"
           value={channel}
-          onChange={(e) => setChannel(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value
+            setChannel(v && !v.startsWith('#') ? '#' + v : v)
+          }}
           placeholder="#channel"
           aria-label="IRC channel to join"
           className={`w-24 ${inputCls}`}
