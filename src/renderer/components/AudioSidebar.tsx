@@ -151,6 +151,82 @@ function ReadyChecklist({
 // Module-level — survives React StrictMode double-mount and component remounts
 const _autoQueuedIds = new Set<string>()
 
+function SpeakerPicker() {
+  const customSpeakers = useAudioStore((s) => s.customSpeakers)
+  const addCustomSpeaker = useAudioStore((s) => s.addCustomSpeaker)
+  const stickySpeaker = useAudioStore((s) => s.stickySpeaker)
+  const setStickySpeaker = useAudioStore((s) => s.setStickySpeaker)
+  const ircUsers = useIrcStore((s) => s.users)
+  const [addingNew, setAddingNew] = useState(false)
+  const [newName, setNewName] = useState('')
+
+  const allSpeakers = useMemo(() => {
+    const ircNicks = new Set(ircUsers.map((u) => u.nick))
+    const extras = customSpeakers.filter((n) => !ircNicks.has(n))
+    return [...ircUsers.map((u) => u.nick), ...extras]
+  }, [ircUsers, customSpeakers])
+
+  function handleChipClick(name: string) {
+    setStickySpeaker(stickySpeaker === name ? null : name)
+  }
+
+  function commitNew() {
+    const name = newName.trim()
+    if (name) {
+      addCustomSpeaker(name)
+      setStickySpeaker(name)
+    }
+    setAddingNew(false)
+    setNewName('')
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap min-h-[22px]">
+      {allSpeakers.map((name) => (
+        <button
+          key={name}
+          onClick={() => handleChipClick(name)}
+          aria-pressed={stickySpeaker === name}
+          title={stickySpeaker === name ? `Active speaker: ${name} — click to clear` : `Set active speaker: ${name}`}
+          className={`px-2 py-0.5 text-xs rounded-full font-mono transition-colors ${
+            stickySpeaker === name
+              ? 'bg-amber-500 text-gray-900 font-semibold ring-1 ring-amber-600'
+              : 'bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700'
+          }`}
+        >
+          {stickySpeaker === name && <span className="mr-1">●</span>}
+          {name}
+        </button>
+      ))}
+      {addingNew ? (
+        <input
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitNew()
+            if (e.key === 'Escape') { setAddingNew(false); setNewName('') }
+          }}
+          onBlur={commitNew}
+          autoFocus
+          placeholder="Name…"
+          aria-label="New speaker name"
+          className="w-20 px-2 py-0.5 text-xs font-mono rounded-full border border-amber-400 dark:border-amber-500 bg-white dark:bg-gray-900 text-slate-800 dark:text-gray-200 outline-none"
+        />
+      ) : (
+        <button
+          onClick={() => setAddingNew(true)}
+          aria-label="Add speaker"
+          title="Add a speaker"
+          className="px-2 py-0.5 text-xs rounded-full text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-800 border border-dashed border-slate-300 dark:border-gray-600 transition-colors"
+        >
+          + Add
+        </button>
+      )}
+    </div>
+  )
+}
+
 type FeedItem =
   | { kind: 'transcription'; data: TranscriptionResult; sortTime: number }
   | { kind: 'scribe'; data: ScribeMessage; sortTime: number }
@@ -168,9 +244,7 @@ export default function AudioSidebar() {
   const selectedSourceId = useAudioStore((s) => s.selectedSourceId)
   const whisperStatus = useAudioStore((s) => s.whisperStatus)
   const transcriptions = useAudioStore((s) => s.transcriptions)
-  const stickySpeaker = useAudioStore((s) => s.stickySpeaker)
   const assignSpeaker = useAudioStore((s) => s.assignSpeaker)
-  const setStickySpeaker = useAudioStore((s) => s.setStickySpeaker)
 
   // Scribe store
   const messages = useScribeStore((s) => s.messages)
@@ -331,22 +405,6 @@ export default function AudioSidebar() {
             </button>
           </div>
 
-          {/* Sticky speaker */}
-          <SpeakerSelect
-            value={stickySpeaker}
-            onChange={(name) => setStickySpeaker(name)}
-          />
-          {stickySpeaker && (
-            <button
-              onClick={() => setStickySpeaker(null)}
-              aria-label="Clear sticky speaker"
-              title="Clear sticky speaker"
-              className="text-slate-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0 leading-none"
-            >
-              ✕
-            </button>
-          )}
-
           {/* Settings */}
           <button
             onClick={() => setShowSettings((v) => !v)}
@@ -362,6 +420,9 @@ export default function AudioSidebar() {
             ⚙
           </button>
         </div>
+
+        {/* Speaker picker */}
+        <SpeakerPicker />
 
         {/* Auto-mode banner */}
         {mode === 'auto' && <AutoScribeBanner />}
