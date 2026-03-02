@@ -121,8 +121,9 @@ export default function AudioSidebar() {
             <button
               onClick={stopCapture}
               aria-label="Stop audio capture"
-              className="px-3 py-1.5 text-sm rounded font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors shrink-0"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors shrink-0"
             >
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
               Stop
             </button>
           ) : (
@@ -131,15 +132,16 @@ export default function AudioSidebar() {
               disabled={!canStart}
               aria-label={canStart ? 'Start audio capture' : 'Select a source and load the Whisper model first'}
               title={canStart ? undefined : 'Select a source and load the Whisper model first'}
-              className="px-3 py-1.5 text-sm rounded font-semibold bg-green-700 hover:bg-green-800 text-white disabled:opacity-40 transition-colors shrink-0"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded font-semibold bg-green-700 hover:bg-green-800 text-white disabled:opacity-40 transition-colors shrink-0"
             >
+              <span className="w-2 h-2 rounded-full bg-white/70 shrink-0" />
               Start
             </button>
           )}
 
-          {/* Review / Auto toggle */}
+          {/* Review / Auto toggle — joined pill */}
           <div
-            className="flex items-center gap-0.5 bg-slate-100 dark:bg-gray-800 rounded p-0.5"
+            className="flex rounded border border-slate-200 dark:border-gray-700 overflow-hidden shrink-0"
             role="radiogroup"
             aria-label="Scribe mode"
           >
@@ -147,10 +149,10 @@ export default function AudioSidebar() {
               onClick={() => setMode('review')}
               role="radio"
               aria-checked={mode === 'review'}
-              className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${
+              className={`px-2 py-0.5 text-xs font-medium transition-colors ${
                 mode === 'review'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
+                  ? 'bg-amber-500 text-gray-900'
+                  : 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
               }`}
             >
               Review
@@ -159,10 +161,10 @@ export default function AudioSidebar() {
               onClick={() => setMode('auto')}
               role="radio"
               aria-checked={mode === 'auto'}
-              className={`px-2 py-0.5 text-xs rounded font-medium transition-colors ${
+              className={`px-2 py-0.5 text-xs font-medium border-l border-slate-200 dark:border-gray-700 transition-colors ${
                 mode === 'auto'
-                  ? 'bg-amber-500 text-gray-900 font-semibold'
-                  : 'text-slate-600 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
+                  ? 'bg-amber-500 text-gray-900'
+                  : 'bg-slate-100 dark:bg-gray-800 text-slate-500 dark:text-gray-400 hover:bg-slate-200 dark:hover:bg-gray-700'
               }`}
             >
               Auto
@@ -173,15 +175,15 @@ export default function AudioSidebar() {
           <SpeakerSelect
             value={stickySpeaker}
             onChange={(name) => setStickySpeaker(name)}
-            className="flex-1 min-w-0"
           />
           {stickySpeaker && (
             <button
               onClick={() => setStickySpeaker(null)}
               aria-label="Clear sticky speaker"
-              className="text-xs text-slate-600 dark:text-gray-400 hover:text-slate-800 dark:hover:text-gray-200 transition-colors"
+              title="Clear sticky speaker"
+              className="text-slate-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors shrink-0 leading-none"
             >
-              Clear
+              ✕
             </button>
           )}
 
@@ -190,13 +192,14 @@ export default function AudioSidebar() {
             onClick={() => setShowSettings((v) => !v)}
             aria-label={showSettings ? 'Hide settings' : 'Show settings'}
             aria-pressed={showSettings}
-            className={`ml-auto px-1.5 py-0.5 text-xs rounded font-medium transition-colors ${
+            title={showSettings ? 'Hide settings' : 'Show settings'}
+            className={`ml-auto px-1.5 py-0.5 text-sm rounded transition-colors ${
               showSettings
-                ? 'bg-slate-300 dark:bg-gray-600 text-slate-800 dark:text-gray-100'
-                : 'text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-gray-700'
+                ? 'bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-200'
+                : 'text-slate-400 dark:text-gray-500 hover:bg-slate-100 dark:hover:bg-gray-800 hover:text-slate-600 dark:hover:text-gray-300'
             }`}
           >
-            Settings
+            ⚙
           </button>
         </div>
 
