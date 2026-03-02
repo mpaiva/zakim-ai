@@ -279,6 +279,19 @@ export default function AudioSettings() {
       {hfTokenSet && (
         <div className="text-xs text-green-600 dark:text-green-400">HuggingFace token configured</div>
       )}
+
+      {/* Setup wizard */}
+      <div className="pt-1 border-t border-slate-200 dark:border-gray-700">
+        <button
+          onClick={() => {
+            localStorage.removeItem('zakim_setup_complete')
+            window.dispatchEvent(new CustomEvent('zakim:show-wizard'))
+          }}
+          className="text-xs text-slate-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+        >
+          ↩ Re-run setup wizard
+        </button>
+      </div>
     </div>
   )
 }

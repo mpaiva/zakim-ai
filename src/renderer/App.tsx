@@ -72,6 +72,10 @@ export default function App() {
       window.api.irc.onTopic((topic) => useIrcStore.getState().setTopic(topic)),
     ]
 
+    // Re-run wizard on demand (fired from Settings)
+    const showWizardHandler = () => setShowWizard(true)
+    window.addEventListener('zakim:show-wizard', showWizardHandler)
+
     // Try to restore API key
     window.api.settings.getApiKey().then((key) => {
       if (key) {
@@ -87,7 +91,10 @@ export default function App() {
       }
     })
 
-    return () => unsubs.forEach((fn) => fn())
+    return () => {
+      unsubs.forEach((fn) => fn())
+      window.removeEventListener('zakim:show-wizard', showWizardHandler)
+    }
   }, [])
 
   function StatusDot({ color }: { color: string }) {
