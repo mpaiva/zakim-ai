@@ -183,6 +183,7 @@ export default function AudioSidebar() {
   const [processingIds, setProcessingIds] = useState<Set<string>>(() => new Set())
   const [processedIds, setProcessedIds] = useState<Set<string>>(() => new Set())
   const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<'feed' | 'log'>('feed')
 
   // Auto-close settings once the Whisper model becomes ready
   useEffect(() => {
@@ -192,11 +193,13 @@ export default function AudioSidebar() {
   const capturing = status === 'capturing'
   const canStart = !!selectedSourceId && whisperStatus === 'ready'
 
-  // Unified feed
+  // Unified feed — excludes sent messages (those live in the Log tab)
   const feed = useMemo<FeedItem[]>(() => [
     ...transcriptions.map((t) => ({ kind: 'transcription' as const, data: t, sortTime: t.timestamp })),
-    ...messages.map((m) => ({ kind: 'scribe' as const, data: m, sortTime: m.timestamp })),
+    ...messages.filter((m) => m.status !== 'sent').map((m) => ({ kind: 'scribe' as const, data: m, sortTime: m.timestamp })),
   ].sort((a, b) => a.sortTime - b.sortTime), [transcriptions, messages])
+
+  const sentMessages = useMemo(() => messages.filter((m) => m.status === 'sent'), [messages])
 
   // Process a transcription — uses speaker attribution if available, falls back to raw text
   async function processTranscription(t: TranscriptionResult) {
@@ -384,6 +387,32 @@ export default function AudioSidebar() {
         )}
       </div>
 
+      {/* Tab bar */}
+      {!showSettings && (
+        <div className="flex border-b border-slate-200 dark:border-gray-700 shrink-0">
+          <button
+            onClick={() => setTab('feed')}
+            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+              tab === 'feed'
+                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Feed
+          </button>
+          <button
+            onClick={() => setTab('log')}
+            className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors ${
+              tab === 'log'
+                ? 'border-amber-500 text-amber-600 dark:text-amber-400'
+                : 'border-transparent text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-300'
+            }`}
+          >
+            Log{sentMessages.length > 0 ? ` (${sentMessages.length})` : ''}
+          </button>
+        </div>
+      )}
+
       {/* Error banner */}
       {error && (
         <div
@@ -406,8 +435,8 @@ export default function AudioSidebar() {
         <AudioSettings />
       </div>
 
-      {/* Unified feed */}
-      {!showSettings && (
+      {/* Feed tab */}
+      {!showSettings && tab === 'feed' && (
         <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
           {feed.length === 0 && !capturing && (
             <ReadyChecklist
@@ -481,6 +510,29 @@ export default function AudioSidebar() {
               />
             )
           })}
+        </div>
+      )}
+
+      {/* Log tab — all sent messages */}
+      {!showSettings && tab === 'log' && (
+        <div className="flex-1 overflow-y-auto p-2 min-h-0">
+          {sentMessages.length === 0 ? (
+            <p className="text-xs text-slate-400 dark:text-gray-500 px-1 py-2 italic">No sent messages yet.</p>
+          ) : (
+            <div className="space-y-0.5">
+              {sentMessages.map((msg) => (
+                <ScribeMessageRow
+                  key={msg.id}
+                  msg={msg}
+                  autoMode={mode === 'auto'}
+                  onApprove={() => approveMessage(msg.id)}
+                  onDiscard={() => discardMessage(msg.id)}
+                  onEdit={(text) => updateMessage(msg.id, { editedText: text })}
+                  onSend={() => sendToIrc(msg)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
