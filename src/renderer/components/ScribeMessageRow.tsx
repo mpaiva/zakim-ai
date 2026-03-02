@@ -36,6 +36,22 @@ export default function ScribeMessageRow({
 
   const btnBase = 'px-2 py-0.5 text-xs rounded font-medium transition-colors'
 
+  const time = new Date(msg.timestamp).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+
+  if (msg.status === 'sent') {
+    return (
+      <div className={`border-l-2 ${typeAccent} flex items-baseline gap-2 px-2 py-1`}>
+        <span className="text-[10px] font-mono text-slate-400 dark:text-gray-500 shrink-0 tabular-nums">{time}</span>
+        <span className="text-xs text-slate-500 dark:text-gray-400 truncate">{msg.editedText || msg.text}</span>
+      </div>
+    )
+  }
+
   return (
     <div
       className={`border-l-2 ${typeAccent} bg-slate-50 dark:bg-gray-800 rounded-r p-2 ${msg.status === 'discarded' ? 'opacity-40' : ''}`}
