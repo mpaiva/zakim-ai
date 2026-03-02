@@ -10,6 +10,91 @@ import ScribeMessageRow from './ScribeMessageRow'
 import SpeakerSelect from './SpeakerSelect'
 import type { ScribeMessage, TranscriptionResult } from '../../shared/types'
 
+function ReadyChecklist({
+  onStart,
+  onOpenSettings,
+}: {
+  onStart: () => void
+  onOpenSettings: () => void
+}) {
+  const sources = useAudioStore((s) => s.sources)
+  const selectedSourceId = useAudioStore((s) => s.selectedSourceId)
+  const setSelectedSourceId = useAudioStore((s) => s.setSelectedSourceId)
+  const whisperStatus = useAudioStore((s) => s.whisperStatus)
+  const whisperModel = useAudioStore((s) => s.whisperModel)
+
+  const modelReady = whisperStatus === 'ready'
+  const sourceSelected = !!selectedSourceId
+  const canStart = modelReady && sourceSelected
+  const modelLabel = { tiny: 'Tiny', base: 'Base', small: 'Small' }[whisperModel]
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden text-sm">
+      {/* Rows */}
+      <div className="divide-y divide-slate-100 dark:divide-gray-800">
+
+        {/* Whisper model */}
+        <div className="flex items-center gap-3 px-4 py-3">
+          <span className={`shrink-0 w-4 text-center font-bold ${modelReady ? 'text-green-500' : 'text-slate-300 dark:text-gray-600'}`}>
+            {modelReady ? '✓' : '○'}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-slate-700 dark:text-gray-300">
+              Whisper {modelLabel} — speech recognition
+            </p>
+            {!modelReady && (
+              <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">Model not yet loaded</p>
+            )}
+          </div>
+          {modelReady ? (
+            <span className="text-xs text-green-600 dark:text-green-400 font-medium shrink-0">Ready</span>
+          ) : (
+            <button
+              onClick={onOpenSettings}
+              className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors shrink-0"
+            >
+              Load in Settings →
+            </button>
+          )}
+        </div>
+
+        {/* Audio source */}
+        <div className="flex items-start gap-3 px-4 py-3">
+          <span className={`shrink-0 w-4 text-center font-bold mt-0.5 ${sourceSelected ? 'text-green-500' : 'text-slate-300 dark:text-gray-600'}`}>
+            {sourceSelected ? '✓' : '○'}
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-slate-700 dark:text-gray-300 mb-1.5">Audio source</p>
+            <select
+              value={selectedSourceId || ''}
+              onChange={(e) => setSelectedSourceId(e.target.value || null)}
+              aria-label="Select audio source"
+              className="w-full text-xs border border-slate-200 dark:border-gray-700 rounded-md px-2 py-1.5 bg-white dark:bg-gray-900 text-slate-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+              <option value="">Select audio source…</option>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Start button */}
+      <div className="px-4 py-3 bg-slate-50 dark:bg-gray-800/50 border-t border-slate-100 dark:border-gray-800">
+        <button
+          onClick={onStart}
+          disabled={!canStart}
+          aria-label={canStart ? 'Start audio capture' : 'Complete the steps above to start'}
+          className="w-full py-2 text-sm font-semibold rounded-lg transition-colors bg-green-700 hover:bg-green-800 text-white disabled:opacity-40"
+        >
+          {canStart ? '⏺  Start Scribing' : 'Complete the steps above'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 type FeedItem =
   | { kind: 'transcription'; data: TranscriptionResult; sortTime: number }
   | { kind: 'scribe'; data: ScribeMessage; sortTime: number }
@@ -260,12 +345,16 @@ export default function AudioSidebar() {
       {/* Unified feed */}
       {!showSettings && (
         <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
-          {feed.length === 0 && (
-            <div className="text-slate-500 dark:text-gray-400 text-sm italic px-1">
-              {apiKeySet
-                ? 'Transcription and scribe messages will appear here'
-                : 'Set your Claude API key in Settings to enable the AI scribe'}
-            </div>
+          {feed.length === 0 && !capturing && (
+            <ReadyChecklist
+              onStart={startCapture}
+              onOpenSettings={() => setShowSettings(true)}
+            />
+          )}
+          {feed.length === 0 && !capturing && !apiKeySet && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 px-1 mt-1">
+              Also set your Claude API key in Settings to enable AI formatting.
+            </p>
           )}
 
           {feed.map((item) => {
