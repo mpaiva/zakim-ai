@@ -22,11 +22,31 @@ function ReadyChecklist({
   const setSelectedSourceId = useAudioStore((s) => s.setSelectedSourceId)
   const whisperStatus = useAudioStore((s) => s.whisperStatus)
   const whisperModel = useAudioStore((s) => s.whisperModel)
+  const ircStatus = useIrcStore((s) => s.status)
+  const ircChannel = useIrcStore((s) => s.channel)
+  const ircNick = useIrcStore((s) => s.nick)
+
+  const [confirming, setConfirming] = useState(false)
 
   const modelReady = whisperStatus === 'ready'
   const sourceSelected = !!selectedSourceId
   const canStart = modelReady && sourceSelected
+  const ircConnected = ircStatus === 'connected' && !!ircChannel
   const modelLabel = { tiny: 'Tiny', base: 'Base', small: 'Small' }[whisperModel]
+
+  function handleStartClick() {
+    if (ircConnected) {
+      setConfirming(true)
+    } else {
+      onStart()
+    }
+  }
+
+  function handleAnnounceAndStart() {
+    window.api.irc.send(ircChannel!, `scribenick: ${ircNick}`)
+    setConfirming(false)
+    onStart()
+  }
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-gray-700 overflow-hidden text-sm">
@@ -80,16 +100,49 @@ function ReadyChecklist({
         </div>
       </div>
 
-      {/* Start button */}
+      {/* Start / Confirmation */}
       <div className="px-4 py-3 bg-slate-50 dark:bg-gray-800/50 border-t border-slate-100 dark:border-gray-800">
-        <button
-          onClick={onStart}
-          disabled={!canStart}
-          aria-label={canStart ? 'Start audio capture' : 'Complete the steps above to start'}
-          className="w-full py-2 text-sm font-semibold rounded-lg transition-colors bg-green-700 hover:bg-green-800 text-white disabled:opacity-40"
-        >
-          {canStart ? '⏺  Start Scribing' : 'Complete the steps above'}
-        </button>
+        {confirming ? (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-slate-700 dark:text-gray-300 mb-0.5">
+                Announce as scriber?
+              </p>
+              <p className="text-xs text-slate-400 dark:text-gray-500 font-mono">
+                scribenick: {ircNick} → {ircChannel}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAnnounceAndStart}
+                className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-green-700 hover:bg-green-800 text-white transition-colors"
+              >
+                Announce & Start
+              </button>
+              <button
+                onClick={() => { setConfirming(false); onStart() }}
+                className="flex-1 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                Just Start
+              </button>
+            </div>
+            <button
+              onClick={() => setConfirming(false)}
+              className="text-xs text-slate-400 dark:text-gray-500 hover:text-slate-600 dark:hover:text-gray-300 transition-colors"
+            >
+              ← Back
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleStartClick}
+            disabled={!canStart}
+            aria-label={canStart ? 'Start audio capture' : 'Complete the steps above to start'}
+            className="w-full py-2 text-sm font-semibold rounded-lg transition-colors bg-green-700 hover:bg-green-800 text-white disabled:opacity-40"
+          >
+            {canStart ? '⏺  Start Scribing' : 'Complete the steps above'}
+          </button>
+        )}
       </div>
     </div>
   )
