@@ -8,6 +8,53 @@ interface Props {
   onComplete: () => void
 }
 
+const W3C_CHANNELS: { channel: string; label: string }[] = [
+  { channel: '#ag',                 label: 'Accessibility Guidelines (WCAG) Working Group' },
+  { channel: '#apa',                label: 'Accessible Platform Architectures Working Group' },
+  { channel: '#aria',               label: 'ARIA Working Group' },
+  { channel: '#audio',              label: 'Audio Working Group' },
+  { channel: '#css',                label: 'CSS Working Group' },
+  { channel: '#dap',                label: 'Devices and Sensors Working Group' },
+  { channel: '#did',                label: 'Decentralized Identifier Working Group' },
+  { channel: '#dxwg',               label: 'Dataset Exchange Working Group' },
+  { channel: '#editing',            label: 'Web Editing Working Group' },
+  { channel: '#fedid',              label: 'Federated Identity Working Group' },
+  { channel: '#i18n',               label: 'Internationalization Working Group' },
+  { channel: '#immersive-web',      label: 'Immersive Web Working Group' },
+  { channel: '#json-ld',            label: 'JSON-LD Working Group' },
+  { channel: '#lws',                label: 'Linked Web Storage Working Group' },
+  { channel: '#math',               label: 'Math Working Group' },
+  { channel: '#mediawg',            label: 'Media Working Group' },
+  { channel: '#miniapp',            label: 'MiniApps Working Group' },
+  { channel: '#patcg',              label: 'Private Advertising Technology Community Group' },
+  { channel: '#pointerevents',      label: 'Pointer Events Working Group' },
+  { channel: '#pwg',                label: 'Publishing Maintenance Working Group' },
+  { channel: '#rch',                label: 'RDF Dataset Canonicalization and Hash Working Group' },
+  { channel: '#rdf-star',           label: 'RDF-star Working Group' },
+  { channel: '#rqtf',               label: 'Research Questions Task Force (Accessibility)' },
+  { channel: '#sdw',                label: 'Spatial Data on the Web Working Group' },
+  { channel: '#social',             label: 'Social Web Working Group' },
+  { channel: '#svg',                label: 'SVG Working Group' },
+  { channel: '#testing',            label: 'Browser Testing and Tools Working Group' },
+  { channel: '#tt',                 label: 'Timed Text Working Group' },
+  { channel: '#vcwg',               label: 'Verifiable Credentials Working Group' },
+  { channel: '#w3c',                label: 'W3C General' },
+  { channel: '#wcag-act',           label: 'WCAG Accessibility Conformance Testing Task Force' },
+  { channel: '#webapps',            label: 'Web Applications Working Group' },
+  { channel: '#webappsec',          label: 'Web Application Security Working Group' },
+  { channel: '#webauthn',           label: 'Web Authentication Working Group' },
+  { channel: '#webfonts',           label: 'Web Fonts Working Group' },
+  { channel: '#webgpu',             label: 'GPU for the Web Working Group' },
+  { channel: '#webmachinelearning', label: 'Web Machine Learning Working Group' },
+  { channel: '#webmob',             label: 'Web Mobile Interest Group' },
+  { channel: '#webperf',            label: 'Web Performance Working Group' },
+  { channel: '#webrtc',             label: 'Web Real-Time Communications Working Group' },
+  { channel: '#webscreens',         label: 'Second Screen Working Group' },
+  { channel: '#webtransport',       label: 'WebTransport Working Group' },
+  { channel: '#wot',                label: 'Web of Things Working Group' },
+  { channel: '#wpwg',               label: 'Web Payments Working Group' },
+]
+
 type WizardStep = 0 | 1 | 2 | 3 | 4 | 5
 
 const STEP_LABELS = ['Claude API', 'HF Token', 'Whisper', 'IRC']
@@ -504,8 +551,14 @@ export default function OnboardingWizard({ onComplete }: Props) {
                 onChange={(e) => setIrcChannelInput(e.target.value)}
                 disabled={isConnected || ircConnecting}
                 placeholder="#apa"
+                list="w3c-channels"
                 className={fieldCls}
               />
+              <datalist id="w3c-channels">
+                {W3C_CHANNELS.map(({ channel, label }) => (
+                  <option key={channel} value={channel}>{label}</option>
+                ))}
+              </datalist>
             </div>
           </div>
           <div className="flex items-center gap-2">
