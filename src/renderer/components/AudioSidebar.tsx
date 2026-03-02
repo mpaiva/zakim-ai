@@ -180,6 +180,7 @@ export default function AudioSidebar() {
   const { channel, status: ircStatus } = useIrcStore()
 
   const [processingId, setProcessingId] = useState<string | null>(null)
+  const [processedIds, setProcessedIds] = useState<Set<string>>(() => new Set())
   const [error, setError] = useState<string | null>(null)
 
   // Auto-close settings once the Whisper model becomes ready
@@ -217,12 +218,14 @@ export default function AudioSidebar() {
         msgs = await window.api.scribe.process(text)
       }
       addMessages(msgs)
+      setProcessedIds((prev) => new Set([...prev, transcriptionId]))
     } catch (err) {
       console.error('[AudioSidebar] processSpeakers failed:', err)
       try {
         const text = speakerTexts.map((s) => `${s.speaker}: ${s.text}`).join('\n')
         const msgs = await window.api.scribe.process(text)
         addMessages(msgs)
+        setProcessedIds((prev) => new Set([...prev, transcriptionId]))
       } catch (err2) {
         setError((err2 as Error).message || 'Processing failed')
       }
@@ -413,6 +416,7 @@ export default function AudioSidebar() {
           {feed.map((item) => {
             if (item.kind === 'transcription') {
               const t = item.data
+              if (processedIds.has(t.id)) return null
               const allAssigned = t.segments.length > 0 && t.segments.every((s) => s.speaker !== null)
               const isProcessing = processingId === t.id
               return (
