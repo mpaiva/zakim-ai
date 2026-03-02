@@ -35,11 +35,15 @@ export function setupIrc(win: BrowserWindow) {
       port: opts.port,
       nick: opts.nick,
       tls: opts.tls,
+      rejectUnauthorized: false,
     })
 
     sendToRenderer(IPC.IRC_ON_STATUS, 'connecting')
 
+    let registered = false
+
     client.on('registered', () => {
+      registered = true
       sendToRenderer(IPC.IRC_ON_STATUS, 'connected')
       emitMessage({
         nick: '*',
@@ -50,12 +54,24 @@ export function setupIrc(win: BrowserWindow) {
     })
 
     client.on('close', () => {
-      sendToRenderer(IPC.IRC_ON_STATUS, 'disconnected')
-      emitMessage({ nick: '*', channel: '', text: 'Disconnected', type: 'system' })
+      if (registered) {
+        sendToRenderer(IPC.IRC_ON_STATUS, 'disconnected')
+        emitMessage({ nick: '*', channel: '', text: 'Disconnected', type: 'system' })
+      }
     })
 
     client.on('socket close', () => {
-      sendToRenderer(IPC.IRC_ON_STATUS, 'disconnected')
+      if (!registered) {
+        // Connection attempt failed before we were registered
+        sendToRenderer(IPC.IRC_ON_STATUS, 'error')
+        emitMessage({
+          nick: '*', channel: '',
+          text: `Could not connect to ${opts.host}:${opts.port}${opts.tls ? ' (TLS)' : ''} — check the address, port, and TLS setting`,
+          type: 'system',
+        })
+      } else {
+        sendToRenderer(IPC.IRC_ON_STATUS, 'disconnected')
+      }
     })
 
     client.on('message', (event: { nick: string; target: string; message: string; type: string }) => {

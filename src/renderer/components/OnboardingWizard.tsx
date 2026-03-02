@@ -79,12 +79,12 @@ export default function OnboardingWizard({ onComplete }: Props) {
 
   // Step 4 — IRC
   const ircStatus = useIrcStore((s) => s.status)
+  const ircMessages = useIrcStore((s) => s.messages)
   const [ircHost, setIrcHost] = useState('irc.w3.org')
   const [ircPort, setIrcPort] = useState(6667)
   const [ircNick, setIrcNick] = useState('zakim-ai')
   const [ircChannelInput, setIrcChannelInput] = useState('#apa')
   const [ircTls, setIrcTls] = useState(false)
-  const [ircConnecting, setIrcConnecting] = useState(false)
 
   // Derived
   const hfTokenSet = useScribeStore((s) => s.hfTokenSet)
@@ -166,14 +166,11 @@ export default function OnboardingWizard({ onComplete }: Props) {
     store.setHost(ircHost)
     store.setPort(ircPort)
     store.setTls(ircTls)
-    setIrcConnecting(true)
     try {
       await window.api.irc.connect({ host: ircHost, port: ircPort, nick: ircNick, tls: ircTls })
       await window.api.irc.join(ircChannelInput)
     } catch (err) {
       console.error('[wizard] IRC connect failed:', err)
-    } finally {
-      setIrcConnecting(false)
     }
   }
 
@@ -424,6 +421,8 @@ export default function OnboardingWizard({ onComplete }: Props) {
       error: 'bg-red-500',
     }
     const isConnected = ircStatus === 'connected'
+    const isConnecting = ircStatus === 'connecting'
+    const lastSystemMsg = [...ircMessages].reverse().find((m) => m.type === 'system')?.text
     const fieldCls =
       'px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-slate-300 dark:border-gray-600 rounded-lg text-slate-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors w-full disabled:opacity-50'
 
@@ -518,10 +517,15 @@ export default function OnboardingWizard({ onComplete }: Props) {
           </div>
         </div>
         {/* Live status */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className={`w-2 h-2 rounded-full ${statusColors[ircStatus] ?? 'bg-slate-400'}`} />
+        <div className="flex items-center gap-2 mb-2">
+          <div className={`w-2 h-2 rounded-full ${statusColors[ircStatus] ?? 'bg-slate-400'} ${isConnecting ? 'animate-pulse' : ''}`} />
           <span className="text-sm text-slate-600 dark:text-gray-300 capitalize">{ircStatus}</span>
         </div>
+        {ircStatus === 'error' && lastSystemMsg && (
+          <p className="text-xs text-red-600 dark:text-red-400 mb-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+            {lastSystemMsg}
+          </p>
+        )}
         {isConnected ? (
           <button
             onClick={() => window.api.irc.disconnect()}
@@ -532,10 +536,10 @@ export default function OnboardingWizard({ onComplete }: Props) {
         ) : (
           <button
             onClick={handleIrcConnect}
-            disabled={ircConnecting}
+            disabled={isConnecting}
             className="w-full py-2 mb-3 text-sm font-semibold rounded-lg bg-green-700 hover:bg-green-800 text-white disabled:opacity-50 transition-colors"
           >
-            {ircConnecting ? 'Connecting…' : 'Connect & Join'}
+            {isConnecting ? 'Connecting…' : 'Connect & Join'}
           </button>
         )}
         <button
