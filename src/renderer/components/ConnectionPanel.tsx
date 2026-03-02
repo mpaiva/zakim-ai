@@ -22,12 +22,7 @@ export default function ConnectionPanel({
       await window.api.irc.disconnect()
     } else {
       await window.api.irc.connect({ host, port, nick, tls })
-    }
-  }
-
-  async function handleJoin() {
-    if (connected && channel) {
-      await window.api.irc.join(channel)
+      if (channel) await window.api.irc.join(channel)
     }
   }
 
@@ -131,7 +126,7 @@ export default function ConnectionPanel({
         <button
           onClick={handleConnect}
           disabled={connecting}
-          aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC'}
+          aria-label={connected ? 'Disconnect from IRC' : 'Connect to IRC and join channel'}
           className={`px-3 py-1 text-sm rounded font-medium transition-colors disabled:opacity-50 ${
             connected
               ? 'bg-red-600 hover:bg-red-700 text-white'
@@ -139,14 +134,6 @@ export default function ConnectionPanel({
           }`}
         >
           {connecting ? 'Connecting…' : connected ? 'Disconnect' : 'Connect'}
-        </button>
-        <button
-          onClick={handleJoin}
-          disabled={!connected || !channel}
-          aria-label="Join IRC channel"
-          className="px-3 py-1 text-sm rounded font-medium bg-green-700 hover:bg-green-800 text-white disabled:opacity-50 transition-colors"
-        >
-          Join
         </button>
       </div>
 
