@@ -166,6 +166,22 @@ function SpeakerPicker() {
     return [...ircUsers.map((u) => u.nick), ...extras]
   }, [ircUsers, customSpeakers])
 
+  // Watch for present+ IRC messages and auto-add the speaker chip
+  useEffect(() => {
+    return useIrcStore.subscribe((state, prevState) => {
+      if (state.messages.length <= prevState.messages.length) return
+      const newMsgs = state.messages.slice(prevState.messages.length)
+      for (const msg of newMsgs) {
+        if (msg.type !== 'message') continue
+        const m = msg.text.match(/^present\+(?:\s+(\S+))?$/i)
+        if (!m) continue
+        // present+ → add the sender; present+ othernick → add othernick
+        const nick = m[1]?.trim() || msg.nick
+        useAudioStore.getState().addCustomSpeaker(nick)
+      }
+    })
+  }, [])
+
   function handleChipClick(name: string) {
     setStickySpeaker(stickySpeaker === name ? null : name)
   }
