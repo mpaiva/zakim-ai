@@ -596,7 +596,14 @@ export default function OnboardingWizard({ onComplete }: Props) {
           <div className={`w-2 h-2 rounded-full ${statusColors[ircStatus] ?? 'bg-slate-400'}`} />
           <span className="text-sm text-slate-600 dark:text-gray-300 capitalize">{ircStatus}</span>
         </div>
-        {!isConnected && (
+        {isConnected ? (
+          <button
+            onClick={() => window.api.irc.disconnect()}
+            className="w-full py-2 mb-3 text-sm font-semibold rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+          >
+            Disconnect
+          </button>
+        ) : (
           <button
             onClick={handleIrcConnect}
             disabled={ircConnecting}
