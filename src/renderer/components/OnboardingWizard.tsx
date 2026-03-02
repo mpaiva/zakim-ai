@@ -440,7 +440,7 @@ export default function OnboardingWizard({ onComplete }: Props) {
                 type="text"
                 value={ircHost}
                 onChange={(e) => setIrcHost(e.target.value)}
-                disabled={isConnected || ircConnecting}
+                disabled={isConnected || isConnecting}
                 placeholder="irc.w3.org"
                 className={fieldCls}
               />
@@ -451,7 +451,7 @@ export default function OnboardingWizard({ onComplete }: Props) {
                 type="number"
                 value={ircPort}
                 onChange={(e) => setIrcPort(Number(e.target.value))}
-                disabled={isConnected || ircConnecting}
+                disabled={isConnected || isConnecting}
                 className={fieldCls}
               />
             </div>
@@ -463,7 +463,7 @@ export default function OnboardingWizard({ onComplete }: Props) {
                 type="text"
                 value={ircNick}
                 onChange={(e) => setIrcNick(e.target.value)}
-                disabled={isConnected || ircConnecting}
+                disabled={isConnected || isConnecting}
                 placeholder="zakim-ai"
                 className={fieldCls}
               />
@@ -477,7 +477,7 @@ export default function OnboardingWizard({ onComplete }: Props) {
                   const v = e.target.value
                   setIrcChannelInput(v && !v.startsWith('#') ? '#' + v : v)
                 }}
-                disabled={isConnected || ircConnecting}
+                disabled={isConnected || isConnecting}
                 placeholder="#apa"
                 list="w3c-channels"
                 className={fieldCls}
@@ -500,7 +500,7 @@ export default function OnboardingWizard({ onComplete }: Props) {
                 if (next && ircPort === 6667) setIrcPort(6697)
                 if (!next && ircPort === 6697) setIrcPort(6667)
               }}
-              disabled={isConnected || ircConnecting}
+              disabled={isConnected || isConnecting}
               aria-label="TLS encryption"
               className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors disabled:opacity-50 ${
                 ircTls ? 'bg-amber-500' : 'bg-slate-300 dark:bg-gray-600'

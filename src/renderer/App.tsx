@@ -1,4 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, Component, type ReactNode, type ErrorInfo } from 'react'
+
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('[ErrorBoundary]', error, info) }
+  render() {
+    if (this.state.error) {
+      const err = this.state.error as Error
+      return (
+        <div className="flex flex-col items-center justify-center h-screen gap-4 p-8 bg-white dark:bg-gray-950 text-slate-900 dark:text-gray-100">
+          <div className="text-4xl">⚠</div>
+          <h1 className="text-lg font-bold">Something went wrong</h1>
+          <pre className="text-xs bg-slate-100 dark:bg-gray-800 rounded p-4 max-w-xl w-full overflow-auto whitespace-pre-wrap text-red-600 dark:text-red-400">
+            {err.message}{'\n\n'}{err.stack}
+          </pre>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 text-gray-900 font-semibold rounded"
+          >
+            Try to recover
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 import ConnectionPanel from './components/ConnectionPanel'
 import ChatPanel from './components/ChatPanel'
 import AudioSidebar from './components/AudioSidebar'
@@ -102,6 +129,7 @@ export default function App() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="h-screen flex flex-col bg-slate-50 dark:bg-gray-950 text-slate-900 dark:text-gray-100 font-sans antialiased select-none">
       {showWizard && (
         <OnboardingWizard
@@ -242,5 +270,6 @@ export default function App() {
         <span className="ml-auto text-slate-400 dark:text-gray-600">v0.1.0</span>
       </div>
     </div>
+    </ErrorBoundary>
   )
 }
