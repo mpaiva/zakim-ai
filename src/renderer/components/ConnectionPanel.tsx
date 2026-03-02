@@ -38,7 +38,7 @@ export default function ConnectionPanel({
     error: 'bg-red-500',
   }[status]
 
-  const inputCls = 'px-2 py-1 text-sm font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-600 disabled:opacity-50 transition-colors'
+  const inputCls = '[field-sizing:content] min-w-10 px-2 py-1 text-sm font-mono bg-white dark:bg-gray-900 border border-slate-300 dark:border-gray-600 rounded text-slate-900 dark:text-gray-100 placeholder:text-slate-400 dark:placeholder:text-gray-600 disabled:opacity-50 transition-colors'
   const groupCls = 'flex items-center gap-1.5 bg-slate-100 dark:bg-gray-800 rounded-lg px-2 py-1'
 
   return (
@@ -60,7 +60,7 @@ export default function ConnectionPanel({
           disabled={connected || connecting}
           placeholder="Host"
           aria-label="IRC server hostname"
-          className={`w-32 ${inputCls}`}
+          className={inputCls}
         />
 
         <input
@@ -69,7 +69,7 @@ export default function ConnectionPanel({
           onChange={(e) => setPort(Number(e.target.value))}
           disabled={connected || connecting}
           aria-label="IRC server port"
-          className={`w-14 ${inputCls}`}
+          className={inputCls}
         />
 
         {/* Custom TLS toggle */}
@@ -105,7 +105,7 @@ export default function ConnectionPanel({
           disabled={connected || connecting}
           placeholder="Nickname"
           aria-label="IRC nickname"
-          className={`w-24 ${inputCls}`}
+          className={inputCls}
         />
       </div>
 
@@ -121,7 +121,7 @@ export default function ConnectionPanel({
           placeholder="#channel"
           aria-label="IRC channel to join"
           list="w3c-channels-bar"
-          className={`w-24 ${inputCls}`}
+          className={inputCls}
         />
         <datalist id="w3c-channels-bar">
           {W3C_CHANNELS.map(({ channel: ch, label }) => (
