@@ -208,9 +208,15 @@ export default function AudioSidebar() {
     const rawText = t.segments.map((s) => s.text).join(' ').trim()
     if (!rawText) return
 
+    // For unassigned segments: fall back to sticky speaker, then first queue entry, then null
+    const defaultSpeaker =
+      useAudioStore.getState().stickySpeaker ??
+      useScribeStore.getState().queue[0]?.nick ??
+      null
+
     const speakerTexts = t.segments
-      .filter((s) => s.speaker !== null)
-      .map((s) => ({ speaker: s.speaker!, text: s.text }))
+      .map((s) => ({ speaker: s.speaker ?? defaultSpeaker, text: s.text }))
+      .filter((s): s is { speaker: string; text: string } => s.speaker !== null)
 
     setProcessingIds((prev) => new Set([...prev, t.id]))
     setError(null)
