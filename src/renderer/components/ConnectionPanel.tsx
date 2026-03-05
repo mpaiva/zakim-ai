@@ -21,8 +21,12 @@ export default function ConnectionPanel({
     if (connected) {
       await window.api.irc.disconnect()
     } else {
-      await window.api.irc.connect({ host, port, nick, tls })
-      if (channel) await window.api.irc.join(channel)
+      try {
+        await window.api.irc.connect({ host, port, nick, tls })
+        if (channel) await window.api.irc.join(channel)
+      } catch {
+        // Connection failure already reported via IPC status/message
+      }
     }
   }
 

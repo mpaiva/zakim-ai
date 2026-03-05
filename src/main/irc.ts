@@ -22,7 +22,7 @@ function emitMessage(msg: Omit<IrcMessage, 'id' | 'timestamp'>) {
 export function setupIrc(win: BrowserWindow) {
   mainWindow = win
 
-  ipcMain.handle(IPC.IRC_CONNECT, async (_event, opts: IrcConnectionOptions) => {
+  ipcMain.handle(IPC.IRC_CONNECT, (_event, opts: IrcConnectionOptions) => {
     if (client) {
       client.quit('Reconnecting...')
       client = null
@@ -30,26 +30,40 @@ export function setupIrc(win: BrowserWindow) {
 
     client = new IrcClient()
 
-    client.connect({
-      host: opts.host,
-      port: opts.port,
-      nick: opts.nick,
-      tls: opts.tls,
-      rejectUnauthorized: false,
-    })
-
     sendToRenderer(IPC.IRC_ON_STATUS, 'connecting')
 
     let registered = false
 
-    client.on('registered', () => {
-      registered = true
-      sendToRenderer(IPC.IRC_ON_STATUS, 'connected')
-      emitMessage({
-        nick: '*',
-        channel: '',
-        text: `Connected to ${opts.host} as ${opts.nick}`,
-        type: 'system',
+    // Return a promise that resolves once registered (so join() isn't called too early)
+    const ready = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Connection timed out'))
+      }, 15_000)
+
+      client!.on('registered', () => {
+        clearTimeout(timeout)
+        registered = true
+        sendToRenderer(IPC.IRC_ON_STATUS, 'connected')
+        emitMessage({
+          nick: '*',
+          channel: '',
+          text: `Connected to ${opts.host} as ${client!.user.nick}`,
+          type: 'system',
+        })
+        resolve()
+      })
+
+      client!.on('socket close', () => {
+        clearTimeout(timeout)
+        if (!registered) {
+          sendToRenderer(IPC.IRC_ON_STATUS, 'error')
+          emitMessage({
+            nick: '*', channel: '',
+            text: `Could not connect to ${opts.host}:${opts.port}${opts.tls ? ' (TLS)' : ''} — check the address, port, and TLS setting`,
+            type: 'system',
+          })
+          reject(new Error('Connection failed'))
+        }
       })
     })
 
@@ -57,20 +71,6 @@ export function setupIrc(win: BrowserWindow) {
       if (registered) {
         sendToRenderer(IPC.IRC_ON_STATUS, 'disconnected')
         emitMessage({ nick: '*', channel: '', text: 'Disconnected', type: 'system' })
-      }
-    })
-
-    client.on('socket close', () => {
-      if (!registered) {
-        // Connection attempt failed before we were registered
-        sendToRenderer(IPC.IRC_ON_STATUS, 'error')
-        emitMessage({
-          nick: '*', channel: '',
-          text: `Could not connect to ${opts.host}:${opts.port}${opts.tls ? ' (TLS)' : ''} — check the address, port, and TLS setting`,
-          type: 'system',
-        })
-      } else {
-        sendToRenderer(IPC.IRC_ON_STATUS, 'disconnected')
       }
     })
 
@@ -136,6 +136,16 @@ export function setupIrc(win: BrowserWindow) {
         type: 'system',
       })
     })
+
+    client.connect({
+      host: opts.host,
+      port: opts.port,
+      nick: opts.nick,
+      tls: opts.tls,
+      rejectUnauthorized: false,
+    })
+
+    return ready
   })
 
   ipcMain.handle(IPC.IRC_DISCONNECT, async () => {
